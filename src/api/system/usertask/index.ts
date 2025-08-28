@@ -68,7 +68,7 @@ export const UserTaskApi = {
   },
 
   handleImport: async (formData) => {
-    return await request.upload({ url: `/admin-api/system/user-task/import`, data: formData })
+    return await request.upload({ url: `/system/user-task/import`, data: formData })
   },
 
   // ==================== 子表（任务进程） ====================
