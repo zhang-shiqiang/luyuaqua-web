@@ -5,7 +5,7 @@ import remainingRouter from './modules/remaining'
 
 // 创建路由实例
 const router = createRouter({
-  history: createWebHistory('/admin-ui-vue3/'),
+  history: createWebHistory(import.meta.env.VITE_BASE_PATH),
   strict: true,
   routes: remainingRouter as RouteRecordRaw[],
   scrollBehavior: () => ({ left: 0, top: 0 })

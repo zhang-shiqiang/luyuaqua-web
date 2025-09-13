@@ -16,9 +16,9 @@
           :inline="true"
           label-width="68px"
         >
-          <el-form-item label="用户名称" prop="username">
+          <el-form-item label="用户名称" prop="nickname">
             <el-input
-              v-model="queryParams.username"
+              v-model="queryParams.nickname"
               placeholder="请输入用户名称"
               clearable
               @keyup.enter="handleQuery"
@@ -106,7 +106,7 @@
           <el-table-column
             label="用户名称"
             align="center"
-            prop="username"
+            prop="nickname"
             :show-overflow-tooltip="true"
           />
           <el-table-column

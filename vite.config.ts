@@ -23,7 +23,7 @@ export default ({command, mode}: ConfigEnv): UserConfig => {
     }
     return {
         // ✅ 修改这里：如果没有配置 VITE_BASE_PATH，就默认使用 './'
-        base: '/admin-ui-vue3/',
+        base: env.VITE_BASE_PATH,
         root: root,
         server: {
             port: env.VITE_PORT, // 端口号

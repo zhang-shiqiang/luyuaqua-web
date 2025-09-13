@@ -56,7 +56,7 @@
           <el-option
             v-for="dict in userList"
             :key="dict.id"
-            :label="dict.username"
+            :label="dict.nickname"
             :value="dict.id"
           />
         </el-select>

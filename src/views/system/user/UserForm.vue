@@ -9,8 +9,8 @@
     >
       <el-row>
         <el-col :span="12">
-          <el-form-item label="用户昵称" prop="nickname">
-            <el-input v-model="formData.nickname" placeholder="请输入用户昵称" />
+          <el-form-item label="用户姓名" prop="nickname">
+            <el-input v-model="formData.nickname" placeholder="请输入用户姓名" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -29,7 +29,12 @@
       <el-row>
         <el-col :span="12">
           <el-form-item label="手机号码" prop="mobile">
-            <el-input v-model="formData.mobile" maxlength="11" placeholder="请输入手机号码" />
+            <el-input
+              v-model="formData.mobile"
+              maxlength="11"
+              @blur="handleMobileBlur"
+              placeholder="请输入手机号码"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -56,32 +61,6 @@
         </el-col>
       </el-row>
       <el-row>
-        <el-col :span="12">
-          <el-form-item label="用户性别">
-            <el-select v-model="formData.sex" placeholder="请选择">
-              <el-option
-                v-for="dict in getIntDictOptions(DICT_TYPE.SYSTEM_USER_SEX)"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="岗位">
-            <el-select v-model="formData.postIds" multiple placeholder="请选择">
-              <el-option
-                v-for="item in postList"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id!"
-              />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-row>
         <el-col :span="24">
           <el-form-item label="备注">
             <el-input v-model="formData.remark" placeholder="请输入内容" type="textarea" />
@@ -96,7 +75,6 @@
   </Dialog>
 </template>
 <script lang="ts" setup>
-import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { CommonStatusEnum } from '@/utils/constants'
 import { defaultProps, handleTree } from '@/utils/tree'
 import * as PostApi from '@/api/system/post'
@@ -139,6 +117,7 @@ const formRules = reactive<FormRules>({
     }
   ],
   mobile: [
+    { required: true, message: '手机号码不能为空', trigger: 'blur' },
     {
       pattern: /^(?:(?:\+|00)86)?1(?:3[\d]|4[5-79]|5[0-35-9]|6[5-7]|7[0-8]|8[\d]|9[189])\d{8}$/,
       message: '请输入正确的手机号码',
@@ -146,6 +125,9 @@ const formRules = reactive<FormRules>({
     }
   ]
 })
+const handleMobileBlur = () => {
+  formData.value.username = formData.value.mobile
+}
 const formRef = ref() // 表单 Ref
 const deptList = ref<Tree[]>([]) // 树形结构
 const postList = ref([] as PostApi.PostVO[]) // 岗位列表

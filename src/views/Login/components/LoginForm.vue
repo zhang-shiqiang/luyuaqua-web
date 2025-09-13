@@ -275,7 +275,7 @@ const handleLogin = async (params: any) => {
     if (!redirect.value) {
       redirect.value = '/'
     }
-    window.location.href = '/admin-ui-vue3/system/usertask/index'
+    window.location.href = location.origin + '/system/usertask/index'
     // 判断是否为SSO登录
     if (redirect.value.indexOf('sso') !== -1) {
       // window.location.href = window.location.href.replace('/login?redirect=', '')
