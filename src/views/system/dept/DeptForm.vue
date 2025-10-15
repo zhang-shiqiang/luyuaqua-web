@@ -24,8 +24,8 @@
       <el-form-item label="显示排序" prop="sort">
         <el-input-number v-model="formData.sort" :min="0" controls-position="right" />
       </el-form-item>
-      <el-form-item label="负责人" prop="leaderUserId">
-        <el-select v-model="formData.leaderUserId" clearable placeholder="请输入负责人">
+      <el-form-item label="负责人" prop="leaderUserIds">
+        <el-select v-model="formData.leaderUserIds" multiple clearable placeholder="请输入负责人">
           <el-option
             v-for="item in userList"
             :key="item.id"
@@ -90,7 +90,7 @@ const formData = ref({
   parentId: undefined,
   name: undefined,
   sort: undefined,
-  leaderUserId: undefined,
+  leaderUserIds: undefined,
   shiftType: undefined,
   phone: undefined,
   email: undefined,
@@ -167,7 +167,7 @@ const resetForm = () => {
     parentId: undefined,
     name: undefined,
     sort: undefined,
-    leaderUserId: undefined,
+    leaderUserIds: undefined,
     shiftType: undefined,
     phone: undefined,
     email: undefined,
