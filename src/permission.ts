@@ -88,6 +88,7 @@ router.beforeEach(async (to, from, next) => {
         // console.log(nextData, 'nextData')
         // next(nextData)
         const targetPath = '/system/usertask/index'
+
         next({ path: targetPath, replace: true })
       } else {
         next()

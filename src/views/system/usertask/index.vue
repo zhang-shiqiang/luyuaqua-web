@@ -94,24 +94,40 @@
       @selection-change="handleRowCheckboxChange"
     >
       <el-table-column type="selection" width="55" fixed />
+      <el-table-column type="index" width="68" label="序号" align="center" fixed />
       <!-- <el-table-column label="任务" align="center" fixed prop="id" /> -->
       <el-table-column
         label="任务名称"
-        min-width="140"
+        min-width="180"
         show-overflow-tooltip
         align="center"
         fixed
         prop="title"
       />
-      <el-table-column label="任务类型" width="120" align="center" prop="taskTypeName" />
+      <el-table-column label="类型" width="120" align="center" prop="taskTypeName" />
+      <el-table-column label="部门" width="120" align="center" prop="deptName" />
+      <el-table-column label="责任人" width="120" align="center" prop="userName" />
+      <el-table-column label="协同人员" align="center" width="160" prop="userTaskAssistantDOS">
+        <template #default="{ row }">
+          <!-- <dict-tag :type="SYSTEM_TASK_STATUS" :value="scope.row.status" /> -->
+          <span>{{ row.userTaskAssistantDOS?.map((x) => x.userName).join(',') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="重要程度" align="center" width="100" prop="importantFlag">
+        <template #default="{ row }">
+          <!-- <dict-tag :type="SYSTEM_TASK_STATUS" :value="scope.row.status" /> -->
+          <span>{{ importantFlagEnums[row.importantFlag] || '' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="描述" width="200" align="center" prop="content" />
       <el-table-column label="任务状态" align="center" width="120" prop="status">
         <template #default="scope">
-          <!-- <dict-tag :type="SYSTEM_TASK_STATUS" :value="scope.row.status" /> -->
           <span>{{
             SYSTEM_TASK_STATUS.find((x) => x.value == scope.row.status)?.label || '-'
           }}</span>
         </template>
       </el-table-column>
+
       <el-table-column label="任务进度" width="160" align="center" prop="progress">
         <template #default="scope">
           <el-progress
@@ -123,61 +139,54 @@
           />
         </template>
       </el-table-column>
-      <el-table-column
-        label="任务描述"
-        min-width="240"
-        show-overflow-tooltip
-        align="center"
-        prop="content"
-      />
-      <el-table-column label="生成周期" align="center" width="90" prop="createCycle">
-        <template #default="scope">
-          <span>{{
-            SYSTEM_CREATE_CYCLE.find((x) => x.value == scope.row.createCycle)?.label || '-'
-          }}</span>
+      <el-table-column label="专注任务" align="center" width="120" prop="focusFlag">
+        <template #default="{ row }">
+          <span>{{ focusFlagEnums[row.focusFlag] }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="配合人员/部门" width="120" align="center" prop="assistant" />
+      <el-table-column label="专注次数" width="120" align="center" prop="focusCount" />
       <el-table-column
-        label="部门"
+        label="专注时间"
         show-overflow-tooltip
-        width="100"
+        width="180"
         align="center"
-        prop="deptName"
+        :formatter="dateFormatter"
+        prop="focusTime"
       />
+      <el-table-column label="班次" align="center" width="120" prop="shiftTypeValue">
+        <template #default="{ row }">
+          <span>{{ banciEnum[row.shiftTypeValue] }}</span>
+        </template>
+      </el-table-column>
       <el-table-column
-        label="用户"
-        show-overflow-tooltip
-        width="100"
+        label="计划开始日期"
         align="center"
-        prop="userName"
-      />
-      <el-table-column
-        label="创建时间"
-        align="center"
-        prop="createTime"
+        prop="startDate"
         :formatter="dateFormatter"
         width="180px"
       />
-      <el-table-column label="开始日期" width="180" align="center">
-        <template #default="{ row }">
-          {{
-            Array.isArray(row.startDate)
-              ? `${row.startDate[0]}-${String(row.startDate[1]).padStart(2, '0')}-${String(row.startDate[2]).padStart(2, '0')}`
-              : row.startDate
-          }}
-        </template>
-      </el-table-column>
-
       <el-table-column
-        label="完成时间"
+        label="实际开始时间"
+        align="center"
+        prop="actualStartDate"
+        :formatter="dateFormatter"
+        width="180px"
+      />
+      <el-table-column
+        label="计划完成日期"
+        align="center"
+        prop="planEndDate"
+        :formatter="dateFormatter"
+        width="180px"
+      />
+      <el-table-column
+        label="实际完成时间"
         align="center"
         prop="endDate"
         :formatter="dateFormatter"
         width="180px"
       />
-
-      <el-table-column label="操作" align="center" min-width="120px">
+      <el-table-column label="操作" fixed="right" align="center" min-width="120px">
         <template #default="scope">
           <el-button
             link
@@ -240,11 +249,28 @@ const SYSTEM_TASK_STATUS = [
   { label: '已延期处理', value: 5 }
 ]
 
+const importantFlagEnums: any = {
+  '1': '普通',
+  '2': '一般重要',
+  '3': '重要'
+}
+
 const SYSTEM_CREATE_CYCLE = [
   { label: '每天', value: 1 },
   { label: '每周', value: 2 },
   { label: '每月', value: 3 }
 ]
+
+const banciEnum = {
+  '1': '早班',
+  '2': '中班',
+  '3': '晚班'
+}
+
+const focusFlagEnums: any = {
+  '1': '是',
+  '0': '否'
+}
 
 const message = useMessage() // 消息弹窗
 const { t } = useI18n() // 国际化

@@ -275,7 +275,8 @@ const handleLogin = async (params: any) => {
     if (!redirect.value) {
       redirect.value = '/'
     }
-    window.location.href = location.origin + '/system/usertask/index'
+    window.location.href =
+      location.origin + import.meta.env.VITE_BASE_PATH + '/system/usertask/index'
     // 判断是否为SSO登录
     if (redirect.value.indexOf('sso') !== -1) {
       // window.location.href = window.location.href.replace('/login?redirect=', '')
@@ -335,6 +336,7 @@ watch(
 onMounted(() => {
   getLoginFormCache()
   getTenantByWebsite()
+  console.log('这是新的版本')
 })
 </script>
 

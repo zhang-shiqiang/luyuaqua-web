@@ -7,7 +7,8 @@ const config: {
   /**
    * api请求基础路径
    */
-  base_url: 'https://luyuboardapi-test.luyuaqua.com/admin-api/',
+  // base_url: 'https://luyuboardapi-test.luyuaqua.com/admin-api/',
+  base_url: 'https://luyuboardapi.luyuaqua.com/admin-api/',
   /**
    * 接口成功返回状态码
    */
