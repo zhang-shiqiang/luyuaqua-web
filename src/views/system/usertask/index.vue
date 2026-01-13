@@ -7,7 +7,7 @@
       :inline="true"
       label-width="98px"
     >
-      <el-row :gutter="16">
+      <el-row :gutter="16" class="mb-16px">
         <el-col :span="6">
           <el-form-item label="标题" prop="title">
             <el-input
@@ -20,13 +20,48 @@
           </el-form-item>
         </el-col>
         <el-col :span="6">
+          <el-form-item label="部门" prop="deptId">
+            <el-select
+              v-model="queryParams.deptId"
+              placeholder="请选择部门"
+              clearable
+              filterable
+              class="!w-100%"
+            >
+              <el-option
+                v-for="dept in deptList"
+                :key="dept.id"
+                :label="dept.name"
+                :value="dept.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="责任人" prop="userId">
+            <el-select
+              v-model="queryParams.userId"
+              placeholder="请选择责任人"
+              clearable
+              filterable
+              class="!w-100%"
+            >
+              <el-option
+                v-for="user in userList"
+                :key="user.id"
+                :label="user.nickname"
+                :value="user.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
           <el-form-item label="状态" prop="status">
             <el-select
               v-model="queryParams.status"
               placeholder="请选择任务状态"
               clearable
-              @change="handleQuery"
-              class="!w-240px"
+              class="!w-100%"
             >
               <el-option
                 v-for="dict in SYSTEM_TASK_STATUS"
@@ -34,6 +69,170 @@
                 :label="dict.label"
                 :value="dict.value"
               />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="重要程度" prop="importantFlag">
+            <el-select
+              v-model="queryParams.importantFlag"
+              placeholder="请选择重要程度"
+              clearable
+              class="!w-100%"
+            >
+              <el-option label="普通" :value="1" />
+              <el-option label="一般重要" :value="2" />
+              <el-option label="重要" :value="3" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="工作范畴" prop="taskClass">
+            <el-select
+              v-model="queryParams.taskClass"
+              placeholder="请选择工作范畴"
+              clearable
+              filterable
+              class="!w-100%"
+            >
+              <el-option
+                v-for="item in workScopeOptions"
+                :key="item.value"
+                :label="item.text"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="项目" prop="projectId">
+            <el-select
+              v-model="queryParams.projectId"
+              placeholder="请选择项目"
+              clearable
+              filterable
+              class="!w-100%"
+            >
+              <el-option
+                v-for="item in projectList"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="工作目的" prop="taskTargetId">
+            <el-select
+              v-model="queryParams.taskTargetId"
+              placeholder="请选择工作目的"
+              clearable
+              filterable
+              class="!w-100%"
+            >
+              <el-option
+                v-for="item in taskTargetOptions"
+                :key="item.value"
+                :label="item.text"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="工作内容" prop="workContentId">
+            <el-select
+              v-model="queryParams.workContentId"
+              placeholder="请选择工作内容"
+              clearable
+              filterable
+              class="!w-100%"
+            >
+              <el-option
+                v-for="item in workContentOptions"
+                :key="item.value"
+                :label="item.text"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="创建时间" prop="createTime">
+            <el-date-picker
+              v-model="queryParams.createTime"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              class="!w-100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="计划开始日期" prop="startDate">
+            <el-date-picker
+              v-model="queryParams.startDate"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              class="!w-100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="实际开始日期" prop="actualStartDate">
+            <el-date-picker
+              v-model="queryParams.actualStartDate"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              class="!w-100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="计划完成日期" prop="planEndDate">
+            <el-date-picker
+              v-model="queryParams.planEndDate"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              class="!w-100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="实际完成日期" prop="endDate">
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              class="!w-100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="专注任务" prop="focusFlag">
+            <el-select
+              v-model="queryParams.focusFlag"
+              placeholder="请选择是否专注"
+              clearable
+              class="!w-100%"
+            >
+              <el-option label="否" :value="0" />
+              <el-option label="是" :value="1" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -95,7 +294,6 @@
     >
       <el-table-column type="selection" width="55" fixed />
       <el-table-column type="index" width="68" label="序号" align="center" fixed />
-      <!-- <el-table-column label="任务" align="center" fixed prop="id" /> -->
       <el-table-column
         label="任务名称"
         min-width="180"
@@ -104,27 +302,27 @@
         fixed
         prop="title"
       />
-      <el-table-column label="类型" width="120" align="center" prop="taskTypeName" />
       <el-table-column label="部门" width="120" align="center" prop="deptName" />
       <el-table-column label="责任人" width="120" align="center" prop="userName" />
-      <el-table-column label="协同人员" align="center" width="160" prop="userTaskAssistantDOS">
-        <template #default="{ row }">
-          <!-- <dict-tag :type="SYSTEM_TASK_STATUS" :value="scope.row.status" /> -->
-          <span>{{ row.userTaskAssistantDOS?.map((x) => x.userName).join(',') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="重要程度" align="center" width="100" prop="importantFlag">
-        <template #default="{ row }">
-          <!-- <dict-tag :type="SYSTEM_TASK_STATUS" :value="scope.row.status" /> -->
-          <span>{{ importantFlagEnums[row.importantFlag] || '' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="描述" width="200" align="center" prop="content" />
       <el-table-column label="任务状态" align="center" width="120" prop="status">
         <template #default="scope">
           <span>{{
             SYSTEM_TASK_STATUS.find((x) => x.value == scope.row.status)?.label || '-'
           }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="重要程度" align="center" width="100" prop="importantFlag">
+        <template #default="{ row }">
+          <span>{{ importantFlagEnums[row.importantFlag] || '' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="工作范畴" width="120" align="center" prop="taskClassName" />
+      <el-table-column label="工作内容" width="120" align="center" prop="workContentName" />
+      <el-table-column label="工作目的" width="120" align="center" prop="taskTargetName" />
+      <el-table-column label="项目" width="120" align="center" prop="taskProjectName" />
+      <el-table-column label="专注任务" align="center" width="100" prop="focusFlag">
+        <template #default="{ row }">
+          <span>{{ focusFlagEnums[row.focusFlag] || '-' }}</span>
         </template>
       </el-table-column>
 
@@ -186,6 +384,25 @@
         :formatter="dateFormatter"
         width="180px"
       />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180px"
+      />
+      <el-table-column label="协同人员" align="center" width="160" prop="userTaskAssistantDOS">
+        <template #default="{ row }">
+          <span>{{ row.userTaskAssistantDOS?.map((x) => x.userName).join(',') || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="描述"
+        width="200"
+        align="center"
+        prop="content"
+        show-overflow-tooltip
+      />
       <el-table-column label="操作" fixed="right" align="center" min-width="120px">
         <template #default="scope">
           <el-button
@@ -236,6 +453,10 @@ import download from '@/utils/download'
 import { UserTaskApi, UserTask } from '@/api/system/usertask'
 import UserTaskForm from './UserTaskForm.vue'
 import TaskProgressInfoList from './components/TaskProgressInfoList.vue'
+import { getUserIdentity } from '@/utils/userRole'
+import * as DeptApi from '@/api/system/dept'
+import * as UserApi from '@/api/system/user'
+import request from '@/config/axios'
 const fileList = ref<any[]>([]) // 文件列表
 /** 任务 列表 */
 defineOptions({ name: 'UserTask' })
@@ -282,26 +503,63 @@ const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
   title: undefined,
-  taskTypeId: undefined,
   deptId: undefined,
   userId: undefined,
-  level: undefined,
-  startDate: [],
-  planEndDate: [],
   status: undefined,
-  progress: undefined,
+  importantFlag: undefined,
+  taskClass: undefined,
+  projectId: undefined,
+  taskTargetId: undefined,
+  workContentId: undefined,
+  createTime: [],
+  startDate: [],
+  actualStartDate: [],
+  planEndDate: [],
   endDate: [],
-  createCycle: undefined,
-  createTime: []
+  focusFlag: undefined
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
+
+// 选项数据
+const deptList = ref<any[]>([])
+const userList = ref<any[]>([])
+const workScopeOptions = ref<any[]>([]) // 工作范畴选项
+const workContentOptions = ref<any[]>([]) // 工作内容类型选项
+const taskTargetOptions = ref<any[]>([]) // 任务目的选项
+const projectList = ref<any[]>([]) // 项目列表
 
 /** 查询列表 */
 const getList = async () => {
   loading.value = true
   try {
-    const data = await UserTaskApi.getUserTaskPage(queryParams)
+    // 处理日期范围参数
+    const params: any = { ...queryParams }
+    // 将日期范围数组转换为字符串格式
+    if (params.createTime && Array.isArray(params.createTime) && params.createTime.length === 2) {
+      params.createTime = params.createTime.join(',')
+    }
+    if (params.startDate && Array.isArray(params.startDate) && params.startDate.length === 2) {
+      params.startDate = params.startDate.join(',')
+    }
+    if (
+      params.actualStartDate &&
+      Array.isArray(params.actualStartDate) &&
+      params.actualStartDate.length === 2
+    ) {
+      params.actualStartDate = params.actualStartDate.join(',')
+    }
+    if (
+      params.planEndDate &&
+      Array.isArray(params.planEndDate) &&
+      params.planEndDate.length === 2
+    ) {
+      params.planEndDate = params.planEndDate.join(',')
+    }
+    if (params.endDate && Array.isArray(params.endDate) && params.endDate.length === 2) {
+      params.endDate = params.endDate.join(',')
+    }
+    const data = await UserTaskApi.getUserTaskPage(params)
     list.value = data.list
     total.value = data.total
   } finally {
@@ -410,8 +668,64 @@ const handleCurrentChange = (row) => {
   currentRow.value = row
 }
 
+/**
+ * 初始化选项数据
+ */
+const initOptions = async () => {
+  try {
+    // 获取部门列表
+    deptList.value = await DeptApi.getSimpleDeptList()
+    // 获取用户列表
+    userList.value = await UserApi.getSimpleUserList()
+    // 获取工作范畴列表
+    const workScopeData = await request.get({
+      url: '/system/task-class/list',
+      params: { classType: 1 }
+    })
+    if (workScopeData) {
+      workScopeOptions.value = (workScopeData || []).map((item: any) => ({
+        text: item.name,
+        value: item.id
+      }))
+    }
+    // 获取工作内容类型列表
+    const workContentData = await request.get({
+      url: '/system/task-class/list',
+      params: { classType: 2 }
+    })
+    if (workContentData) {
+      workContentOptions.value = (workContentData || []).map((item: any) => ({
+        text: item.name,
+        value: item.id
+      }))
+    }
+    // 获取任务目的列表
+    const taskTargetData = await request.get({
+      url: '/system/task-class/list',
+      params: { classType: 3 }
+    })
+    if (taskTargetData) {
+      taskTargetOptions.value = (taskTargetData || []).map((item: any) => ({
+        text: item.name,
+        value: item.id
+      }))
+    }
+    // 获取项目列表
+    const projectData = await request.get({
+      url: '/system/task-class/list',
+      params: { classType: 4 }
+    })
+    if (projectData) {
+      projectList.value = projectData || []
+    }
+  } catch (error) {
+    console.error('初始化选项数据失败', error)
+  }
+}
+
 /** 初始化 **/
 onMounted(() => {
+  initOptions()
   getList()
 })
 </script>
@@ -419,6 +733,7 @@ onMounted(() => {
 <style scoped>
 .el-form-item {
   width: 100%;
+  margin-bottom: 8px !important;
 }
 
 .el-form-item__content .el-input,
