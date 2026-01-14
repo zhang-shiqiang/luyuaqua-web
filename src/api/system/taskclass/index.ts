@@ -26,6 +26,11 @@ export const TaskClassApi = {
     return await request.post({ url: `/system/task-class/create`, data })
   },
 
+  // 修改任务分类
+  updateTaskClass: async (data: TaskClass) => {
+    return await request.put({ url: `/system/task-class/update`, data })
+  },
+
   // 删除任务分类
   deleteTaskClass: async (id: number) => {
     return await request.delete({ url: `/system/task-class/delete?id=` + id })

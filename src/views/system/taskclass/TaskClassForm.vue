@@ -101,12 +101,16 @@ const submitForm = async () => {
   formLoading.value = true
   try {
     const data = { ...formData.value }
-    // 新增时不传 id
     if (formType.value === 'create') {
+      // 新增时不传 id
       delete data.id
+      await TaskClassApi.createTaskClass(data)
+      message.success(t('common.createSuccess'))
+    } else {
+      // 修改时调用更新接口
+      await TaskClassApi.updateTaskClass(data)
+      message.success(t('common.updateSuccess'))
     }
-    await TaskClassApi.createTaskClass(data)
-    message.success(formType.value === 'create' ? t('common.createSuccess') : t('common.updateSuccess'))
     dialogVisible.value = false
     // 发送操作成功的事件
     emit('success')
