@@ -102,5 +102,9 @@ export const UserTaskApi = {
   // 获得任务进程
   getTaskProgressInfo: async (id: number) => {
     return await request.get({ url: `/system/user-task/task-progress-info/get?id=` + id })
+  },
+
+  getTaskFileList: async (id: number) => {
+    return await request.get({ url: `/system/user-task/getTaskFileList?id=` + id })
   }
 }

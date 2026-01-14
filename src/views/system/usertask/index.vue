@@ -403,8 +403,24 @@
         prop="content"
         show-overflow-tooltip
       />
-      <el-table-column label="操作" fixed="right" align="center" min-width="120px">
+      <el-table-column label="操作" fixed="right" align="center" min-width="200px">
         <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            @click="handleUploadAttachment(scope.row.id)"
+            v-hasPermi="['system:user-task:update']"
+          >
+            上传附件
+          </el-button>
+          <el-button
+            link
+            type="primary"
+            @click="handleViewAttachment(scope.row.id)"
+            v-hasPermi="['system:user-task:query']"
+          >
+            附件
+          </el-button>
           <el-button
             link
             type="primary"
@@ -435,6 +451,10 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <UserTaskForm ref="formRef" @success="getList" />
+  <!-- 上传附件弹窗 -->
+  <UploadAttachmentForm ref="uploadAttachmentFormRef" @success="handleUploadSuccess" />
+  <!-- 附件列表弹窗 -->
+  <TaskAttachmentList ref="taskAttachmentListRef" />
   <!-- 子表的列表 -->
   <!-- <ContentWrap>
     <el-tabs model-value="taskProgressInfo">
@@ -453,6 +473,8 @@ import download from '@/utils/download'
 import { UserTaskApi, UserTask } from '@/api/system/usertask'
 import UserTaskForm from './UserTaskForm.vue'
 import TaskProgressInfoList from './components/TaskProgressInfoList.vue'
+import UploadAttachmentForm from './components/UploadAttachmentForm.vue'
+import TaskAttachmentList from './components/TaskAttachmentList.vue'
 import { getUserIdentity } from '@/utils/userRole'
 import * as DeptApi from '@/api/system/dept'
 import * as UserApi from '@/api/system/user'
@@ -588,6 +610,24 @@ const resetQuery = () => {
 const formRef = ref()
 const openForm = (type: string, id?: number) => {
   formRef.value.open(type, id)
+}
+
+/** 上传附件操作 */
+const uploadAttachmentFormRef = ref()
+const handleUploadAttachment = (taskId: number) => {
+  uploadAttachmentFormRef.value?.open(taskId)
+}
+
+/** 查看附件操作 */
+const taskAttachmentListRef = ref()
+const handleViewAttachment = (taskId: number) => {
+  taskAttachmentListRef.value?.open(taskId)
+}
+
+/** 上传附件成功回调 */
+const handleUploadSuccess = () => {
+  // 上传成功后可以刷新列表或执行其他操作
+  // getList()
 }
 
 /** 删除按钮操作 */
