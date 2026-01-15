@@ -64,9 +64,25 @@ export const UserTaskApi = {
     return await request.delete({ url: `/system/user-task/delete-list?ids=${ids.join(',')}` })
   },
 
-  // 导出任务 Excel
-  exportUserTask: async (params) => {
-    return await request.download({ url: `/system/user-task/export-excel`, params })
+  // 导出任务 Excel (使用 GET 请求，携带 Authorization)
+  exportUserTask: async (params: any) => {
+    // 处理参数，保留所有参数（包括分页参数）
+    const exportParams: any = { ...params }
+
+    // 处理日期范围参数，将数组转换为逗号分隔的字符串
+    const dateFields = ['createTime', 'startDate', 'actualStartDate', 'planEndDate', 'endDate']
+    dateFields.forEach((field) => {
+      if (
+        exportParams[field] &&
+        Array.isArray(exportParams[field]) &&
+        exportParams[field].length === 2
+      ) {
+        exportParams[field] = exportParams[field].join(',')
+      }
+    })
+
+    // 使用 request.download 确保携带 Authorization 头
+    return await request.download({ url: `/system/user-task/export-excel`, params: exportParams })
   },
 
   downloadTemplate: async (params) => {

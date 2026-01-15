@@ -236,18 +236,13 @@
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="12" style="display: flex; justify-content: flex-end">
+        <el-col :span="24" style="display: flex; justify-content: flex-start">
           <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
           <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
-          <el-button
-            type="primary"
-            plain
-            @click="openForm('create')"
-            v-hasPermi="['system:user-task:create']"
-          >
+          <el-button type="primary" plain @click="openForm('create')">
             <Icon icon="ep:plus" class="mr-5px" /> 新增
           </el-button>
-          <el-button
+          <!-- <el-button
             type="primary"
             plain
             @click="handleExport"
@@ -264,6 +259,10 @@
               @input="handleImport"
             />
             <Icon icon="ep:plus" class="mr-5px" /> 批量导入
+          </el-button> -->
+
+          <el-button type="primary" plain @click="handleExportExcel" :loading="exportLoading">
+            <Icon icon="ep:download" class="mr-5px" /> 导出
           </el-button>
 
           <!-- <el-button
@@ -403,7 +402,7 @@
         prop="content"
         show-overflow-tooltip
       />
-      <el-table-column label="操作" fixed="right" align="center" min-width="200px">
+      <el-table-column label="操作" fixed="right" align="center" min-width="180px">
         <template #default="scope">
           <el-button
             link
@@ -421,14 +420,14 @@
           >
             附件
           </el-button>
-          <el-button
+          <!-- <el-button
             link
             type="primary"
             @click="openForm('update', scope.row.id)"
             v-hasPermi="['system:user-task:update']"
           >
             编辑
-          </el-button>
+          </el-button> -->
           <el-button
             link
             type="danger"
@@ -687,7 +686,25 @@ const handleImport = async (e: Event) => {
   }
 }
 
-/** 导出按钮操作 */
+/** 导出 Excel 按钮操作 */
+const handleExportExcel = async () => {
+  try {
+    exportLoading.value = true
+    // 使用 request.download 确保携带 Authorization 头
+    const blob = await UserTaskApi.exportUserTask(queryParams)
+    // 使用 downloadByData 触发浏览器下载
+    const { downloadByData } = await import('@/utils/filt')
+    downloadByData(blob, '任务数据.xlsx')
+    message.success('导出成功')
+  } catch (error: any) {
+    console.error('导出失败', error)
+    message.error(error.message || '导出失败')
+  } finally {
+    exportLoading.value = false
+  }
+}
+
+/** 导出模版按钮操作 */
 const handleExport = async () => {
   try {
     // 导出的二次确认
