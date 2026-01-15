@@ -2,7 +2,7 @@
   <Dialog v-model="dialogVisible" title="附件列表" width="1200px">
     <el-table v-loading="loading" :data="list" style="width: 100%">
       <el-table-column type="selection" width="55" />
-      <el-table-column label="文件名" align="center" prop="name" :show-overflow-tooltip="true" />
+      <el-table-column label="文件名" align="center" prop="path" :show-overflow-tooltip="true" />
       <el-table-column label="文件路径" align="center" prop="path" :show-overflow-tooltip="true" />
       <el-table-column label="URL" align="center" prop="url" :show-overflow-tooltip="true" />
       <el-table-column
@@ -12,8 +12,20 @@
         width="120"
         :formatter="fileSizeFormatter"
       />
-      <el-table-column label="文件类型" align="center" prop="type" width="180px" />
-      <el-table-column label="文件内容" align="center" prop="url" width="110px">
+      <el-table-column
+        label="文件类型"
+        align="center"
+        prop="type"
+        width="180px"
+        :show-overflow-tooltip="true"
+      />
+      <el-table-column
+        label="文件内容"
+        align="center"
+        prop="url"
+        width="110px"
+        :show-overflow-tooltip="true"
+      >
         <template #default="{ row }">
           <el-image
             v-if="row.type && row.type.includes('image')"
@@ -32,9 +44,9 @@
             target="_blank"
             >预览</el-link
           >
-          <el-link v-else type="primary" download :href="row.url" :underline="false" target="_blank"
+          <!-- <el-link v-else type="primary" download :href="row.url" :underline="false" target="_blank"
             >下载</el-link
-          >
+          > -->
         </template>
       </el-table-column>
       <el-table-column
@@ -56,11 +68,10 @@
 import { fileSizeFormatter } from '@/utils'
 import { dateFormatter } from '@/utils/formatTime'
 import { UserTaskApi } from '@/api/system/usertask'
-import request from '@/config/axios'
+import { config } from '@/config/axios/config'
 
 defineOptions({ name: 'TaskAttachmentList' })
 
-const { t } = useI18n() // 国际化
 const message = useMessage() // 消息弹窗
 
 const dialogVisible = ref(false) // 弹窗的是否展示
@@ -92,19 +103,13 @@ const getList = async () => {
 }
 
 /** 下载文件 */
-const handleDownload = async (row: any) => {
+const handleDownload = (row: any) => {
   try {
-    // 调用 /infra/file/29/get/ + 文件路径
-    const downloadUrl = `/infra/file/29/get/${encodeURIComponent(row.path)}`
+    // 构建完整的下载 URL
+    const downloadUrl = `${config.base_url}infra/file/29/get/${row.path}`
 
-    // 使用 request.download 下载文件
-    const blob = await request.download({ url: downloadUrl })
-
-    // 使用 downloadByData 处理下载
-    const { downloadByData } = await import('@/utils/filt')
-    downloadByData(blob, row.name)
-
-    message.success('下载成功')
+    // 使用 window.open 触发浏览器下载
+    window.open(downloadUrl, '_blank')
   } catch (error: any) {
     console.error('下载失败', error)
     message.error(error.message || '下载失败')

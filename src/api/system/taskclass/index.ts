@@ -18,7 +18,7 @@ export const TaskClassApi = {
     deptId?: number
     classType?: number
   }) => {
-    return await request.get({ url: `/system/task-class/list`, params })
+    return await request.get({ url: `/system/task-class/page`, params })
   },
 
   // 新增任务分类
@@ -36,4 +36,3 @@ export const TaskClassApi = {
     return await request.delete({ url: `/system/task-class/delete?id=` + id })
   }
 }
-

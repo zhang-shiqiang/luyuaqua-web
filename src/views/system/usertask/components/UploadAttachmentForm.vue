@@ -32,6 +32,7 @@
 </template>
 <script lang="ts" setup>
 import * as FileApi from '@/api/infra/file'
+import { UserTaskApi } from '@/api/system/usertask'
 import type { UploadRequestOptions } from 'element-plus/es/components/upload/src/upload'
 
 defineOptions({ name: 'UploadAttachmentForm' })
@@ -44,6 +45,7 @@ const formLoading = ref(false) // 表单的加载中
 const fileList = ref([]) // 文件列表
 const data = ref({ path: '' })
 const uploadRef = ref()
+const taskId = ref<number | undefined>() // 保存任务ID
 
 // 上传URL（用于el-upload的action属性，实际不会使用，因为我们使用httpRequest）
 const uploadUrl = ref('')
@@ -52,7 +54,8 @@ const uploadUrl = ref('')
 const httpRequest = async (options: UploadRequestOptions) => {
   formLoading.value = true
   try {
-    const res = await FileApi.updateFile({ file: options.file })
+    const res = await FileApi.uploadFile({ file: options.file })
+
     if (res.code === 0) {
       return res
     } else {
@@ -67,12 +70,12 @@ const httpRequest = async (options: UploadRequestOptions) => {
 }
 
 /** 打开弹窗 */
-const open = async (taskId?: number) => {
+const open = async (id?: number) => {
   dialogVisible.value = true
   resetForm()
-  if (taskId) {
-    // 可以在这里保存任务ID，用于后续关联
-    data.value.taskId = taskId
+  if (id) {
+    // 保存任务ID，用于后续关联
+    taskId.value = id
   }
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
@@ -93,15 +96,29 @@ const submitFileForm = () => {
 
 /** 文件上传成功处理 */
 const emit = defineEmits(['success']) // 定义 success 事件，用于操作成功后的回调
-const submitFormSuccess = () => {
-  // 清理
-  dialogVisible.value = false
-  formLoading.value = false
-  unref(uploadRef)?.clearFiles()
-  fileList.value = []
-  // 提示成功，并刷新
-  message.success(t('common.createSuccess'))
-  emit('success')
+const submitFormSuccess = async (response: any) => {
+  try {
+    // 获取文件ID（根据实际返回数据结构调整）
+    const fileId = response?.data?.id || response?.data?.fileId || response?.data
+
+    // 如果有任务ID和文件ID，保存文件关联关系
+    if (taskId.value && fileId) {
+      formLoading.value = true
+      await UserTaskApi.saveRelFile({ taskId: taskId.value, fileId: fileId })
+    }
+
+    // 清理
+    dialogVisible.value = false
+    formLoading.value = false
+    unref(uploadRef)?.clearFiles()
+    fileList.value = []
+    // 提示成功，并刷新
+    message.success(t('common.createSuccess'))
+    emit('success')
+  } catch (error: any) {
+    formLoading.value = false
+    message.error(error.message || '保存文件关系失败')
+  }
 }
 
 /** 上传错误提示 */
@@ -116,6 +133,7 @@ const resetForm = () => {
   formLoading.value = false
   fileList.value = []
   data.value = { path: '' }
+  taskId.value = undefined
   uploadRef.value?.clearFiles()
 }
 

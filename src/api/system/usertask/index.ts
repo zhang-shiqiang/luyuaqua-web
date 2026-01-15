@@ -26,6 +26,12 @@ export interface UserTask {
   createCycle: number // 生成周期（0无 1每天2每周3每月）
 }
 
+/** 保存任务附件关系请求 VO */
+export interface UserTaskFileSaveReqVO {
+  taskId: number // 任务ID
+  fileId: number // 文件ID
+}
+
 // 任务 API
 export const UserTaskApi = {
   // 查询任务分页
@@ -106,5 +112,10 @@ export const UserTaskApi = {
 
   getTaskFileList: async (id: number) => {
     return await request.get({ url: `/system/user-task/getTaskFileList?id=` + id })
+  },
+
+  // 保存文件关联关系
+  saveRelFile: async (data: UserTaskFileSaveReqVO) => {
+    return await request.post({ url: `/system/user-task/saveRelFile`, data })
   }
 }
