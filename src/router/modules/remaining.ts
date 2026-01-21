@@ -705,7 +705,29 @@ const remainingRouter: AppRouteRecordRaw[] = [
     }
   },
   {
+    path: '/system',
+    component: Layout,
+    name: 'SystemBoard',
+    meta: {
+      hidden: true
+    },
+    children: [
+      {
+        path: 'board/index',
+        component: () => import('@/views/system/board/index.vue'),
+        name: 'BoardIndex',
+        meta: {
+          title: '看板',
+          icon: 'ep:data-board',
+          noCache: true,
+          canTo: true
+        }
+      }
+    ]
+  },
+  {
     path: '/iot',
+
     component: Layout,
     name: 'IOT',
     meta: {
