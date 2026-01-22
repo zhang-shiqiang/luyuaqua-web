@@ -275,8 +275,9 @@ const handleLogin = async (params: any) => {
     if (!redirect.value) {
       redirect.value = '/'
     }
+    // 跳转到根路径，由路由守卫根据用户角色决定最终跳转
     window.location.href =
-      location.origin + import.meta.env.VITE_BASE_PATH + '/system/usertask/index'
+      location.origin + import.meta.env.VITE_BASE_PATH + '/'
     // 判断是否为SSO登录
     if (redirect.value.indexOf('sso') !== -1) {
       // window.location.href = window.location.href.replace('/login?redirect=', '')
