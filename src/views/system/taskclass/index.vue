@@ -154,7 +154,7 @@ const getList = async () => {
     } else {
       // 兼容旧格式，直接返回数组
       list.value = Array.isArray(data) ? data : []
-      total.value = list.value.length
+    total.value = list.value.length
     }
   } finally {
     loading.value = false

@@ -67,7 +67,7 @@
 
 
         <!-- 部门总览内容 -->
-        <div v-if="activeDeptTab === 'summary'" class="dept-summary">
+        <div v-show="activeDeptTab === 'summary'" class="dept-summary">
 
 
           <!-- 筛选条件 - 上方右侧 -->
@@ -82,30 +82,42 @@
           <el-row :gutter="16">
             <el-col
               v-for="dept in boardInfo?.detailRespVOList"
-              :key="dept.deptId"
+              :key="dept.businessId || dept.deptId || dept.id"
               :xs="24"
               :sm="12"
               :md="8"
               :lg="6"
             >
               <el-card shadow="hover" class="dept-card" @click="handleDeptClick(dept)">
-                <div class="dept-name">{{ dept.name }}</div>
-                <el-descriptions :column="2" size="small">
-                  <el-descriptions-item label="总任务">{{ dept.total || 0 }}</el-descriptions-item>
-                  <el-descriptions-item label="待处理">{{ dept.pending || 0 }}</el-descriptions-item>
-                  <el-descriptions-item label="进行中">{{ dept.processing || 0 }}</el-descriptions-item>
-                  <el-descriptions-item label="已完成">{{ dept.completed || 0 }}</el-descriptions-item>
-                  <el-descriptions-item label="延期">
-                    <el-tag type="danger">{{ dept.delay || 0 }}</el-tag>
-                  </el-descriptions-item>
-                </el-descriptions>
+                <div class="dept-header">
+                  <div class="dept-name">{{ dept.name }}</div>
+                  <div class="dept-total">{{ dept.total || 0 }}</div>
+                </div>
+                <div class="dept-stats">
+                  <div class="stat-item">
+                    <div class="stat-label">待处理</div>
+                    <div class="stat-value">{{ dept.pending || 0 }}</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-label">进行中</div>
+                    <div class="stat-value">{{ dept.processing || 0 }}</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-label">已完成</div>
+                    <div class="stat-value">{{ dept.completed || 0 }}</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-label">延期</div>
+                    <div class="stat-value danger">{{ dept.delay || 0 }}</div>
+                  </div>
+                </div>
               </el-card>
             </el-col>
           </el-row>
         </div>
 
         <!-- 部门总结内容 - 紧凑列表样式 -->
-        <div v-if="activeDeptTab === 'ranking'" class="dept-ranking">
+        <div v-show="activeDeptTab === 'ranking'" class="dept-ranking">
 
 
           <!-- 筛选条件 - 上方右侧 -->
@@ -119,7 +131,7 @@
           </div>
           <div
             v-for="(dept, index) in boardInfo?.deptSummaryRespVOList"
-            :key="dept.deptId"
+            :key="dept.businessId || dept.deptId || dept.id"
             class="ranking-card"
             @click="handleRankingItemClick(dept)"
           >
@@ -162,7 +174,7 @@
         </div>
 
         <!-- 项目视图内容 -->
-        <div v-if="activeDeptTab === 'navigation'" class="navigation-view">
+        <div v-show="activeDeptTab === 'navigation'" class="navigation-view">
            <!-- 筛选条件 - 同一行 -->
            <div class="navigation-filter">
               <el-space wrap>
@@ -328,7 +340,7 @@
     <!-- 部门看板 (boardType=3) - 从部门卡片钻取而来 -->
     <div v-if="boardType === 3" class="dept-board">
       <div class="board-header">
-        <el-button link type="primary" @click="boardType = 2" class="back-btn">
+        <el-button v-if="isAdmin" link type="primary" @click="boardType = 2" class="back-btn">
           <Icon icon="ep:arrow-left" /> 返回部门总览
         </el-button>
         <div class="current-dept-title">{{ boardInfo?.deptName || currentDeptName || '部门详情' }}</div>
@@ -344,7 +356,7 @@
         </el-tabs>
 
         <!-- 任务列表内容 -->
-        <div v-if="activeDetailTab === 'task'" class="dept-tab-content">
+        <div v-show="activeDetailTab === 'task'" class="dept-tab-content">
           <!-- 任务列表筛选条件 -->
           <div class="task-filter-section">
             <el-space wrap>
@@ -398,7 +410,8 @@
             </el-space>
           </div>
           
-          <el-table v-loading="navigationLoading" :data="navigationTaskList" style="width: 100%" height="400">
+          <el-table v-loading="navigationLoading" :data="navigationTaskList" :stripe="true" style="width: 100%" height="400">
+            <el-table-column type="index" width="68" label="序号" align="center" />
             <el-table-column prop="title" label="任务标题" min-width="200" show-overflow-tooltip />
             <el-table-column prop="userName" label="负责人" width="120" />
             <el-table-column prop="status" label="状态" width="100">
@@ -406,9 +419,9 @@
                 <el-tag size="small" :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="progress" label="进度" width="120">
+            <el-table-column prop="progress" label="进度" width="180">
               <template #default="{ row }">
-                <el-progress :percentage="row.progress || 0" :stroke-width="6" />
+                <el-progress :percentage="row.progress || 0" :stroke-width="20" :text-inside="true" />
               </template>
             </el-table-column>
             <el-table-column label="操作" width="100" fixed="right">
@@ -428,7 +441,7 @@
         </div>
 
         <!-- 员工总结内容 -->
-        <div v-if="activeDetailTab === 'employee'" class="dept-tab-content">
+        <div v-show="activeDetailTab === 'employee'" class="dept-tab-content">
           <!-- 筛选条件 -->
           <div class="content-filter">
             <el-radio-group v-model="employeeSummaryFilterIndex" @change="handleEmployeeSummaryFilterChange">
@@ -464,7 +477,7 @@
         </div>
 
         <!-- 员工排名内容 -->
-        <div v-if="activeDetailTab === 'rank'" class="dept-tab-content">
+        <div v-show="activeDetailTab === 'rank'" class="dept-tab-content">
           <!-- 筛选和排序条件 -->
           <div class="content-filter">
             <el-space wrap>
@@ -484,7 +497,7 @@
           </div>
           
           <!-- 表格形式展示员工排名 -->
-          <el-table :data="userRankList" style="width: 100%" height="500">
+          <el-table :data="userRankList" :stripe="true" style="width: 100%" height="500">
             <el-table-column label="排名" width="100" align="center">
               <template #default="{ $index }">
                 <img v-if="$index === 0" src="@/assets/gold.svg" alt="1" class="rank-medal" />
@@ -504,7 +517,7 @@
         </div>
 
         <!-- 专注时长排名内容 -->
-        <div v-if="activeDetailTab === 'focus'" class="dept-tab-content">
+        <div v-show="activeDetailTab === 'focus'" class="dept-tab-content">
           <!-- 筛选条件 -->
           <div class="content-filter">
             <el-radio-group v-model="focusTimeFilterIndex" @change="handleFocusTimeFilterChange">
@@ -516,7 +529,7 @@
           </div>
           
           <!-- 表格形式展示专注时长排名 -->
-          <el-table :data="focusRankList" style="width: 100%" height="500">
+          <el-table :data="focusRankList" :stripe="true" style="width: 100%" height="500">
             <el-table-column label="排名" width="100" align="center">
               <template #default="{ $index }">
                 <img v-if="$index === 0" src="@/assets/gold.svg" alt="1" class="rank-medal" />
@@ -528,7 +541,6 @@
             <el-table-column prop="userName" label="姓名" width="150" />
             <el-table-column prop="focusTimeString" label="专注时长" align="center" />
           </el-table>
-          <div v-if="!focusRankList.length" class="empty-text">暂无数据</div>
         </div>
       </el-card>
     </div>
@@ -537,7 +549,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch, nextTick, computed } from 'vue'
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { BoardApi, type BoardInfoVO, type TaskVO, type EmployeeSummaryVO, type FocusTimeVO } from '@/api/system/board'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus' // Added ElMessage
@@ -551,13 +563,16 @@ import { Loading } from '@element-plus/icons-vue'
 defineOptions({ name: 'SystemBoard' })
 
 const userStore = useUserStore()
-// 简单模拟管理员判断，实际情况根据 userStore.roles 判断
-// const isAdmin = computed(() => userStore.roles && userStore.roles.includes('admin'))
-const isAdmin = computed(() => true) // 暂时全部开启交互以便测试
+// 判断是否是管理员（超级管理员或系统管理员）
+const isAdmin = computed(() => {
+  const roles = userStore.getRoles
+  return roles && (roles.includes('super_admin') || roles.includes('system_admin'))
+})
 
 const boardType = ref(2) // 默认部门leader看板
 const boardInfo = ref<BoardInfoVO>()
 const currentDeptId = ref<number>(0) // 当前选中的部门ID
+const currentDeptName = ref<string>('') // 当前选中的部门名称
 const userRankList = ref<EmployeeSummaryVO[]>([]) // 员工排名
 const focusRankList = ref<FocusTimeVO[]>([]) // 专注排名
 const activeDeptTab = ref('summary')
@@ -859,7 +874,7 @@ const handleNavigationStatusClick = (index: number) => {
 
 // 项目视图部门选择变化
 const handleNavigationDeptChange = (deptId: number | string | '') => {
-  navigationForm.deptId = deptId || ''
+  navigationForm.deptId = deptId ? String(deptId) : ''
   // 重置分页并查询
   navigationPagination.pageNo = 1
   loadNavigationTasks()
@@ -867,7 +882,7 @@ const handleNavigationDeptChange = (deptId: number | string | '') => {
 
 // 项目视图员工选择变化
 const handleNavigationUserChange = (userId: number | string | '') => {
-  navigationForm.userId = userId || ''
+  navigationForm.userId = userId ? String(userId) : ''
   // 重置分页并查询
   navigationPagination.pageNo = 1
   loadNavigationTasks()
@@ -875,7 +890,7 @@ const handleNavigationUserChange = (userId: number | string | '') => {
 
 // 项目视图项目性质改变
 const handleNavigationTaskTypeChange = (taskTypeId: number | string | '') => {
-  navigationForm.taskTypeId = taskTypeId || ''
+  navigationForm.taskTypeId = taskTypeId ? String(taskTypeId) : ''
   // 重置分页并查询
   navigationPagination.pageNo = 1
   loadNavigationTasks()
@@ -956,8 +971,10 @@ const handleJumpToTask = (status: number, label: string) => {
 const handleDeptClick = async (dept: any) => {
   if (isAdmin.value && boardType.value === 2) {
      boardType.value = 3
-     currentDeptId.value = dept.deptId // 记录当前部门ID
-     currentDeptName.value = dept.name || '' // 记录当前部门名称
+     // 兼容不同的字段名：businessId, deptId, id
+     currentDeptId.value = dept.businessId || dept.deptId || dept.id || 0
+     currentDeptName.value = dept.name || dept.deptName || '' // 记录当前部门名称，兼容两种字段名
+     console.log('点击部门:', dept, '部门ID:', currentDeptId.value)
      await loadDeptDetail()
   }
 }
@@ -1083,8 +1100,10 @@ const handleFocusTimeFilterChange = () => {
 const handleRankingItemClick = async (dept: any) => {
   if (isAdmin.value && boardType.value === 2) {
     boardType.value = 3
-    currentDeptId.value = dept.deptId // 记录当前部门ID
-    currentDeptName.value = dept.deptName || '' // 记录当前部门名称
+    // 兼容不同的字段名：businessId, deptId, id
+    currentDeptId.value = dept.businessId || dept.deptId || dept.id || 0
+    currentDeptName.value = dept.deptName || dept.name || '' // 记录当前部门名称，兼容两种字段名
+    console.log('点击排名:', dept, '部门ID:', currentDeptId.value)
     await loadDeptDetail()
   }
 }
@@ -1125,7 +1144,17 @@ const getStatusColor = (status: number) => {
 }
 
 onMounted(() => {
-  loadBoardInfo()
+  // 如果不是管理员（即是 leader），直接进入部门详情视图
+  if (!isAdmin.value) {
+    const user = userStore.getUser
+    if (user && user.deptId) {
+      boardType.value = 3
+      currentDeptId.value = user.deptId
+      loadDeptDetail()
+    }
+  } else {
+    loadBoardInfo()
+  }
 })
 </script>
 
@@ -1204,14 +1233,12 @@ $bg-color: #f5f7fa;
   }
 }
 
-// 内容区域容器 - 统一背景和边框，营造"整体感"
+// 内容区域容器 - 移除边框，只保留内边距
 .leader-board {
   .dept-summary, .dept-ranking, .navigation-view {
-    background: #fff;
-    border: 1px solid #e4e7ed;
-    border-top: none; // 与 Tab 无缝连接
-    border-radius: 0 0 4px 4px; // 仅底部圆角
-    padding: 16px; // 统一内边距
+    background: transparent;
+    border: none;
+    padding: 16px 0; // 上下内边距
   }
 }
 
@@ -1251,12 +1278,12 @@ $bg-color: #f5f7fa;
 }
 
 .content-filter {
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-bottom: 10px;
 }
 
 .navigation-filter {
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-bottom: 10px;
 }
 
@@ -1278,68 +1305,69 @@ $bg-color: #f5f7fa;
     border: 1px solid #ebeef5 !important; 
     box-shadow: none !important; 
     background: #fcfcfc;
-    cursor: pointer; // 增加手势提示可点击
-    transition: all 0.2s; // 快速响应
+    cursor: pointer;
+    transition: all 0.2s;
 
-    // 覆盖默认的 body padding
     :deep(.el-card__body) {
       padding: 12px 16px;
     }
 
     &:hover {
-      border-color: $primary-color !important; // 悬停边框变蓝
       background: #fff;
-      box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1) !important; // 伴随淡淡的蓝色阴影
-      z-index: 1; // 确保浮在上方
+      box-shadow: 0 4px 12px rgba(64, 158, 255, 0.1) !important;
+      z-index: 1;
     }
 
-    .dept-name {
-      font-size: 15px; 
-      font-weight: 600;
-      color: $text-main;
-      margin-bottom: 12px;
-      padding-bottom: 10px;
-      border-bottom: 1px dashed #e4e7ed; 
+    .dept-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: color 0.2s;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e8eaed;
       
-      &::after {
-        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024' width='12' height='12'%3E%3Cpath fill='%23909399' d='M338.752 104.704a64 64 0 0 0 0 90.496l316.8 316.8-316.8 316.8a64 64 0 0 0 90.496 90.496l362.048-362.048a64 64 0 0 0 0-90.496L429.248 104.704a64 64 0 0 0-90.496 0z'/%3E%3C/svg%3E");
-        opacity: 0.6;
+      .dept-name {
+        font-size: 15px; 
+        font-weight: 600;
+        color: $text-main;
+        flex: 1;
+      }
+      
+      .dept-total {
+        font-size: 24px;
+        font-weight: 600;
+        color: $primary-color;
+        margin-left: 8px;
       }
     }
     
-    // Hover 时文字也变色
-    &:hover .dept-name {
-      color: $primary-color;
-      border-bottom-color: rgba($primary-color, 0.2);
-    }
-
-    :deep(.el-descriptions) {
-      .el-descriptions__cell {
-        padding-bottom: 4px; // 极度紧凑
-        vertical-align: middle;
-      }
+    .dept-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
       
-      .el-descriptions__label {
-        color: $text-secondary;
-        font-weight: normal;
-        margin-right: 4px;
-        font-size: 12px;
-      }
-      
-      .el-descriptions__content {
-        color: $text-main;
-        font-weight: 500;
-        font-size: 13px;
-      }
-      
-      // 移除原Element Plus带来的额外间距
-      .el-descriptions__table {
-         width: 100%;
-         table-layout: fixed;
+      .stat-item {
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #e8eaed;
+        background: #f8f9fa;
+        text-align: center;
+        
+        .stat-label {
+          font-size: 12px;
+          color: $text-secondary;
+          margin-bottom: 4px;
+        }
+        
+        .stat-value {
+          font-size: 16px;
+          font-weight: 600;
+          color: $text-main;
+          
+          &.danger {
+            color: #f56c6c;
+          }
+        }
       }
     }
   }
@@ -1608,6 +1636,7 @@ $bg-color: #f5f7fa;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 20px;
+    margin-right: 12px;
     
     .back-btn {
       font-size: 14px;
@@ -1709,7 +1738,7 @@ $bg-color: #f5f7fa;
     .task-filter-section {
       margin-bottom: 16px;
       padding: 12px;
-      background: #f5f7fa;
+      background: transparent;
       border-radius: 4px;
     }
     
@@ -1759,16 +1788,16 @@ $bg-color: #f5f7fa;
       }
       
       .employee-summary-item {
-        border: 1px solid #ebeef5;
+        border: 1px solid var(--el-border-color-light);
         border-radius: 4px;
         padding: 16px;
         margin-bottom: 12px;
-        background: #fcfcfc;
+        background: var(--el-bg-color);
         transition: all 0.2s;
         
         &:hover {
-          background: #fff;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          background: var(--el-fill-color-lighter);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
         
         .employee-header {
@@ -1777,20 +1806,20 @@ $bg-color: #f5f7fa;
           align-items: center;
           margin-bottom: 12px;
           padding-bottom: 12px;
-          border-bottom: 1px dashed #e4e7ed;
+          border-bottom: 2px solid var(--el-border-color-light);
           
           .employee-name {
             font-size: 16px;
             font-weight: 600;
-            color: $text-main;
+            color: var(--el-text-color-primary);
           }
           
           .employee-task-count {
             font-size: 13px;
-            color: $text-secondary;
+            color: var(--el-text-color-secondary);
             
             strong {
-              color: $primary-color;
+              color: var(--el-color-primary);
               font-weight: 600;
               margin-left: 4px;
             }
@@ -1807,21 +1836,21 @@ $bg-color: #f5f7fa;
             
             .stat-label {
               font-size: 12px;
-              color: $text-secondary;
+              color: var(--el-text-color-secondary);
               margin-bottom: 4px;
             }
             
             .stat-val {
               font-size: 16px;
               font-weight: 500;
-              color: $text-main;
+              color: var(--el-text-color-primary);
               
               &.highlight {
-                color: $primary-color;
+                color: var(--el-color-primary);
               }
               
               &.danger {
-                color: #f56c6c;
+                color: var(--el-color-danger);
               }
             }
           }
@@ -1921,6 +1950,564 @@ $bg-color: #f5f7fa;
         padding: 20px 0;
         font-size: 13px;
      }
+  }
+}
+
+// 暗色模式适配
+.dark {
+  // 调整整体文字颜色，让白色不那么刺眼
+  --el-text-color-primary: rgba(255, 255, 255, 0.85);
+  --el-text-color-regular: rgba(255, 255, 255, 0.75);
+  --el-text-color-secondary: rgba(255, 255, 255, 0.6);
+  --el-text-color-placeholder: rgba(255, 255, 255, 0.45);
+  
+  // tab-card 暗色模式
+  .tab-card {
+    :deep(.el-card__body) {
+      background: var(--el-bg-color-overlay);
+    }
+    
+    :deep(.el-tabs__header) {
+      background: var(--el-bg-color-overlay);
+      border-color: var(--el-fill-color-dark);
+      border-bottom-color: var(--el-fill-color-darker);
+    }
+    
+    :deep(.el-tabs__item) {
+      color: var(--el-text-color-regular);
+      
+      &.is-active {
+        color: var(--el-color-primary);
+      }
+      
+      &:hover {
+        color: var(--el-color-primary);
+      }
+    }
+    
+    :deep(.el-tabs__nav-wrap::after) {
+      background-color: transparent;
+    }
+  }
+  
+  // 内容区域容器背景适配
+  .leader-board {
+    .dept-summary, .dept-ranking, .navigation-view {
+      background: transparent;
+      border: none;
+    }
+  }
+  
+  // 筛选区域按钮暗色模式
+  .content-filter,
+  .navigation-filter {
+    :deep(.el-radio-group) {
+      .el-radio-button__inner {
+        border-color: var(--el-border-color);
+        background: var(--el-fill-color);
+        color: var(--el-text-color-regular);
+      }
+      
+      .el-radio-button__original-radio:checked + .el-radio-button__inner {
+        background-color: var(--el-color-primary);
+        border-color: var(--el-color-primary);
+        color: rgba(255, 255, 255, 0.95);
+      }
+    }
+  }
+  
+  // dept-summary 内部元素暗色适配
+  .dept-summary {
+    .dept-card {
+      background: var(--el-bg-color-overlay);
+      border-color: var(--el-fill-color-dark) !important;
+      
+      &:hover {
+        background: var(--el-fill-color-light);
+        box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2) !important;
+      }
+      
+      .dept-header {
+        border-bottom-color: var(--el-fill-color-dark);
+        
+        .dept-name {
+          color: var(--el-text-color-primary);
+        }
+        
+        .dept-total {
+          color: var(--el-color-primary);
+        }
+      }
+      
+      .dept-stats {
+        .stat-item {
+          background: var(--el-fill-color-darker);
+          border-color: var(--el-fill-color-dark);
+          
+          .stat-label {
+            color: var(--el-text-color-secondary);
+          }
+          
+          .stat-value {
+            color: var(--el-text-color-primary);
+            
+            &.danger {
+              color: var(--el-color-danger);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // dept-ranking 暗色适配
+  .dept-ranking {
+    .ranking-card {
+      border-color: var(--el-fill-color-dark);
+      
+      .ranking-left {
+        background: var(--el-fill-color);
+        border-right-color: var(--el-fill-color-darker);
+        color: var(--el-text-color-secondary);
+        
+        &.top-ranking {
+          background: var(--el-bg-color-overlay);
+        }
+      }
+      
+      .ranking-content {
+        .ranking-info {
+          .dept-title {
+            color: var(--el-text-color-primary);
+          }
+          
+          .dept-meta {
+            color: var(--el-text-color-secondary);
+          }
+        }
+        
+        .ranking-stats {
+          .stat-item {
+            .stat-label {
+              color: var(--el-text-color-secondary);
+            }
+            
+            .stat-val {
+              color: var(--el-text-color-primary);
+              
+              &.highlight {
+                color: var(--el-color-primary);
+              }
+              
+              &.danger {
+                color: var(--el-color-danger);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Tab 卡片暗色模式
+  .dept-tab-card {
+      :deep(.el-tabs__header) {
+        background: var(--el-bg-color-overlay);
+        border-color: var(--el-fill-color-dark);
+        border-bottom-color: var(--el-fill-color-darker);
+      }
+    
+    :deep(.el-tabs__item) {
+      color: var(--el-text-color-regular);
+      
+      &.is-active {
+        color: var(--el-color-primary);
+      }
+    }
+  }
+  
+  // 部门看板头部
+  .board-header {
+    .back-btn {
+      color: var(--el-text-color-secondary);
+      
+      &:hover {
+        color: var(--el-color-primary);
+      }
+    }
+    
+    .current-dept-title {
+      color: var(--el-text-color-primary);
+    }
+  }
+  
+  // 统计卡片暗色模式
+  .stats-cards {
+        .stat-card {
+          background: var(--el-bg-color-overlay);
+          border-color: var(--el-fill-color-dark);
+      
+      .stat-content {
+        .stat-value {
+          color: var(--el-color-primary);
+        }
+        
+        .stat-label {
+          color: var(--el-text-color-secondary);
+        }
+      }
+    }
+  }
+  
+  // 卡片头部暗色模式
+  .list-card, .ranking-list-card {
+    .card-header {
+      color: var(--el-text-color-primary);
+    }
+  }
+  
+  // 项目视图任务列表暗色模式
+  .navigation-view {
+    .navigation-task-list-wrapper {
+      // 滚动条暗色模式
+      &::-webkit-scrollbar-track {
+        background: var(--el-fill-color-darker);
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--el-border-color);
+        
+        &:hover {
+          background: var(--el-border-color-hover);
+        }
+      }
+    }
+    
+    .navigation-task-list {
+      .loading-state,
+      .loading-more {
+        color: var(--el-text-color-secondary);
+      }
+      
+      .task-list-container {
+      .task-item {
+        background: var(--el-bg-color-overlay);
+        border-color: var(--el-fill-color-dark);
+          
+          &:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border-color: var(--el-color-primary);
+          }
+          
+          .task-item-header {
+            .task-item-title {
+              color: var(--el-text-color-primary);
+            }
+          }
+          
+          .task-item-content {
+            color: var(--el-text-color-secondary);
+          }
+          
+          .task-item-footer {
+            color: var(--el-text-color-placeholder);
+          }
+        }
+      }
+      
+      .no-more,
+      .empty-state {
+        color: var(--el-text-color-secondary);
+      }
+    }
+  }
+  
+  // 部门总结列表卡片暗色模式
+  .dept-summary {
+    .content-filter {
+      // 筛选按钮组自动适配
+    }
+  }
+  
+  // 部门排名暗色模式
+  .dept-ranking {
+    .dept-summary-list {
+      .summary-card {
+        background-color: var(--el-bg-color-overlay);
+        border-color: var(--el-fill-color-dark);
+        
+        &:hover {
+          background-color: var(--el-fill-color-light);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .summary-header {
+          border-bottom-color: var(--el-border-color);
+          
+          .dept-info {
+            .dept-name {
+              color: var(--el-text-color-primary);
+            }
+            
+            .dept-meta {
+              color: var(--el-text-color-secondary);
+            }
+          }
+          
+          .dept-detail-link {
+            color: var(--el-color-primary);
+          }
+        }
+        
+        .ranking-stats {
+          .stat-item {
+            .stat-label {
+              color: var(--el-text-color-secondary);
+            }
+            
+            .stat-val {
+              color: var(--el-text-color-primary);
+              
+              &.highlight {
+                color: var(--el-color-primary);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  .leader-board {
+    // 部门卡片暗色模式
+    .dept-card {
+      background: var(--el-bg-color-overlay);
+      border-color: var(--el-fill-color-dark);
+      
+      &:hover {
+        background: var(--el-fill-color-light);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+      
+      .dept-name {
+        color: var(--el-text-color-primary);
+      }
+    }
+    
+    // Tab 内容区域暗色模式
+    .dept-tab-content {
+      // 任务筛选区域
+      .task-filter-section {
+        background: transparent;
+        
+        // 适配 el-select 组件
+        :deep(.el-select) {
+          .el-input__wrapper {
+            background-color: var(--el-bg-color-overlay);
+            box-shadow: 0 0 0 1px var(--el-border-color) inset;
+            
+            &:hover {
+              box-shadow: 0 0 0 1px var(--el-border-color-hover) inset;
+            }
+          }
+          
+          .el-input__inner {
+            color: var(--el-text-color-primary);
+            
+            &::placeholder {
+              color: var(--el-text-color-placeholder);
+            }
+          }
+          
+          .el-input__suffix {
+            .el-icon {
+              color: var(--el-text-color-secondary);
+            }
+          }
+        }
+        
+        // 适配 el-button 组件
+        :deep(.el-button) {
+          background-color: var(--el-fill-color);
+          border-color: var(--el-border-color);
+          color: var(--el-text-color-primary);
+          
+          &:hover {
+            background-color: var(--el-fill-color-light);
+            border-color: var(--el-border-color-hover);
+          }
+        }
+      }
+      
+      .rank-number {
+        color: var(--el-text-color-secondary);
+      }
+      
+      .rank-value {
+        color: var(--el-color-primary);
+      }
+      
+      // 员工总结列表暗色模式
+      .employee-summary-list {
+        // 滚动条暗色模式
+        &::-webkit-scrollbar-track {
+          background: var(--el-fill-color-darker);
+        }
+        
+        &::-webkit-scrollbar-thumb {
+          background: var(--el-border-color);
+          
+          &:hover {
+            background: var(--el-border-color-hover);
+          }
+        }
+        
+        .employee-summary-item {
+          border-color: var(--el-fill-color-dark);
+          background: var(--el-bg-color-overlay);
+          
+          &:hover {
+            background: var(--el-fill-color-light);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          }
+          
+          .employee-header {
+            border-bottom-color: var(--el-fill-color-dark);
+            
+            .employee-name {
+              color: var(--el-text-color-primary);
+            }
+            
+            .employee-task-count {
+              color: var(--el-text-color-secondary);
+              
+              strong {
+                color: var(--el-color-primary);
+              }
+            }
+          }
+          
+          .employee-stats {
+            .stat-item {
+              .stat-label {
+                color: var(--el-text-color-secondary);
+              }
+              
+              .stat-val {
+                color: var(--el-text-color-primary);
+                
+                &.highlight {
+                  color: var(--el-color-primary);
+                }
+                
+                &.danger {
+                  color: var(--el-color-danger);
+                }
+              }
+            }
+          }
+        }
+        
+        .empty-text {
+          color: var(--el-text-color-secondary);
+        }
+      }
+    }
+    
+    // 排名列表暗色模式
+    .ranking-list-body {
+      // 滚动条暗色模式
+      &::-webkit-scrollbar-track {
+        background: var(--el-fill-color-darker);
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--el-border-color);
+        
+        &:hover {
+          background: var(--el-border-color-hover);
+        }
+      }
+      
+      .ranking-item {
+        background-color: var(--el-bg-color-overlay);
+        border-color: var(--el-fill-color-dark);
+        
+        .rank-idx {
+          background: var(--el-fill-color);
+          color: var(--el-text-color-regular);
+          
+          &.top-3 {
+            background: rgba(230, 162, 60, 0.2);
+            color: #e6a23c;
+            border-color: rgba(230, 162, 60, 0.3);
+          }
+        }
+        
+        .rank-info {
+          .rank-name {
+            color: var(--el-text-color-regular);
+          }
+          
+          .rank-score {
+            color: var(--el-color-primary);
+          }
+          
+          .rank-val {
+            color: var(--el-text-color-secondary);
+          }
+        }
+      }
+      
+      .empty-text {
+        color: var(--el-text-color-secondary);
+      }
+    }
+  }
+  
+  // 部门看板总结列表暗色模式
+  .dept-summary-list {
+    .summary-card {
+      background-color: var(--el-bg-color-overlay);
+      border-color: var(--el-border-color-darker);
+      
+      &:hover {
+        background-color: var(--el-fill-color-light);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+      
+      .summary-header {
+        border-bottom-color: var(--el-border-color);
+        
+        .dept-name {
+          color: var(--el-text-color-primary);
+        }
+        
+        .dept-detail-link {
+          color: var(--el-color-primary);
+        }
+      }
+      
+      .summary-content {
+        .summary-row {
+          .summary-label {
+            color: var(--el-text-color-secondary);
+          }
+          
+          .summary-value {
+            color: var(--el-text-color-primary);
+            
+            &.highlight {
+              color: var(--el-color-primary);
+            }
+            
+            &.danger {
+              color: var(--el-color-danger);
+            }
+          }
+        }
+      }
+    }
   }
 }
 </style>

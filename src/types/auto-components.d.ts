@@ -9,6 +9,8 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppLinkInput: typeof import('./../components/AppLinkInput/index.vue')['default']
     AppLinkSelectDialog: typeof import('./../components/AppLinkInput/AppLinkSelectDialog.vue')['default']
+    'AutoComponents.d': typeof import('./auto-components.d.ts')['default']
+    'AutoImports.d': typeof import('./auto-imports.d.ts')['default']
     Backtop: typeof import('./../components/Backtop/src/Backtop.vue')['default']
     BoundaryEventTimer: typeof import('./../components/bpmnProcessDesigner/package/penal/custom-config/components/BoundaryEventTimer.vue')['default']
     CallActivity: typeof import('./../components/bpmnProcessDesigner/package/penal/task/task-components/CallActivity.vue')['default']

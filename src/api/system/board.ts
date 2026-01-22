@@ -13,7 +13,9 @@ export interface TaskClassCountVO {
 /** 部门详情 VO */
 export interface DepartmentDetailVO {
   name: string
-  deptId: number
+  deptId?: number
+  businessId?: number // 实际的部门ID字段
+  id?: number
   total: number
   pending: number
   processing: number
@@ -23,8 +25,11 @@ export interface DepartmentDetailVO {
 
 /** 部门总结 VO */
 export interface DepartmentSummaryVO {
-  deptId: number
+  deptId?: number
+  businessId?: number // 实际的部门ID字段
+  id?: number
   deptName: string
+  name?: string
   total: number
   completeRate: number // 及时完成率
   delayRate: number // 延期率
@@ -117,6 +122,7 @@ export interface BoardInfoVO {
   pending: number
   processing: number
   completed: number
+  deptName?: string // 部门名称
   detailRespVOList?: DepartmentDetailVO[] // 部门详情列表
   deptSummaryRespVOList?: DepartmentSummaryVO[] // 部门总结列表
   focusTaskList?: TaskVO[] // 正在执行的任务列表

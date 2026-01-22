@@ -238,5 +238,47 @@ watch(
     margin-bottom: 16px;
     font-size: 18px;
   }
+  
+  // 适配 el-descriptions 组件
+  :deep(.el-descriptions) {
+    .el-descriptions__label,
+    .el-descriptions__content {
+      background-color: transparent;
+      border-color: var(--el-border-color-light);
+    }
+    
+    .el-descriptions__label {
+      color: var(--el-text-color-secondary);
+    }
+    
+    .el-descriptions__content {
+      color: var(--el-text-color-primary);
+    }
+  }
+}
+
+// 暗色模式适配
+.dark {
+  .task-detail {
+    h3 {
+      color: var(--el-text-color-primary);
+    }
+    
+    :deep(.el-descriptions) {
+      .el-descriptions__label,
+      .el-descriptions__content {
+        background-color: transparent;
+        border-color: var(--el-fill-color-dark);
+      }
+      
+      .el-descriptions__label {
+        color: var(--el-text-color-secondary);
+      }
+      
+      .el-descriptions__content {
+        color: var(--el-text-color-primary);
+      }
+    }
+  }
 }
 </style>

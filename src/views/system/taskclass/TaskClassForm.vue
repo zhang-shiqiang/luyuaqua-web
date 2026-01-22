@@ -104,7 +104,7 @@ const submitForm = async () => {
     if (formType.value === 'create') {
       // 新增时不传 id
       delete data.id
-      await TaskClassApi.createTaskClass(data)
+    await TaskClassApi.createTaskClass(data)
       message.success(t('common.createSuccess'))
     } else {
       // 修改时调用更新接口
