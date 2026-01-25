@@ -2,6 +2,14 @@
   <ContentWrap>
     <!-- Leader 看板 (boardType=2) -->
     <div v-if="boardType === 2" class="leader-board">
+      <!-- 返回按钮和当前部门标题 -->
+      <div v-if="canGoBack && currentDeptName" class="board-header">
+        <el-button link type="primary" @click="handleGoBack" class="back-btn">
+          <Icon icon="ep:arrow-left" /> 返回上一级
+        </el-button>
+        <div class="current-dept-title">{{ currentDeptName }}</div>
+      </div>
+      
       <!-- 顶部统计卡片 - 已隐藏 -->
       <!-- <el-row :gutter="16" class="stats-cards">
         <el-col :xs="24" :sm="12" :md="8" :lg="4">
@@ -52,7 +60,7 @@
       </el-row> -->
 
       <!-- Tab 切换 -->
-      <el-card class="tab-card" style="position: relative;">
+      <el-card class="tab-card" style="position: relative;" v-loading="boardLoading">
         <!-- 筛选条件 - 绝对定位到 Tab 右侧 -->
 
 
@@ -340,7 +348,7 @@
     <!-- 部门看板 (boardType=3) - 从部门卡片钻取而来 -->
     <div v-if="boardType === 3" class="dept-board">
       <div class="board-header">
-        <el-button v-if="isAdmin" link type="primary" @click="boardType = 2" class="back-btn">
+        <el-button v-if="canGoBack" link type="primary" @click="handleGoBack" class="back-btn">
           <Icon icon="ep:arrow-left" /> 返回部门总览
         </el-button>
         <div class="current-dept-title">{{ boardInfo?.deptName || currentDeptName || '部门详情' }}</div>
@@ -570,6 +578,8 @@ const isAdmin = computed(() => {
 })
 
 const boardType = ref(2) // 默认部门leader看板
+const canGoBack = ref(false) // 是否可以返回（从boardType=2切换到3时设置为true）
+const deptLevelStack = ref<Array<{ deptId: number; deptName: string }>>([]) // 部门层级栈，用于多级返回
 const boardInfo = ref<BoardInfoVO>()
 const currentDeptId = ref<number>(0) // 当前选中的部门ID
 const currentDeptName = ref<string>('') // 当前选中的部门名称
@@ -578,6 +588,7 @@ const focusRankList = ref<FocusTimeVO[]>([]) // 专注排名
 const activeDeptTab = ref('summary')
 const deptFilterIndex = ref(0)
 const chartRef = ref()
+const boardLoading = ref(false) // 看板加载状态
 
 // 部门看板详情 Tab
 const activeDetailTab = ref('task') // task-任务列表，employee-员工总结，rank-员工排名，focus-专注时长排名
@@ -586,6 +597,7 @@ const employeeSummaryFilterIndex = ref(0) // 员工总结筛选：0-全部，1-�
 const employeeRankFilterIndex = ref(0) // 员工排名筛选：0-全部，1-月度，2-本周，3-当天
 const employeeRankOrderType = ref(0) // 员工排名排序：0-任务数量，1-及时完成率，2-延期率，3-平均时长
 const focusTimeFilterIndex = ref(0) // 专注时长筛选：0-全部，1-月度，2-本周，3-当天
+const rankingOrderType = ref(0) // 部门总结排序：0-任务数量，1-及时完成率，2-延期率，3-平均时长
 
 // 部门任务列表筛选
 const deptUserOptions = ref<Array<{ nickname: string; id: number | string }>>([]) // 部门员工列表
@@ -644,16 +656,31 @@ const showTaskDetail = ref(false)
 const currentTaskId = ref(0)
 
 // 获取看板数据
-const loadBoardInfo = async () => {
-  const params = {
-    orgCycle: 1, // 1=仅本部门
-    dataCycle: deptFilterIndex.value, // 数据周期
-    orderType: 0 // 0=按任务数量排序
+const loadBoardInfo = async (deptId?: number) => {
+  boardLoading.value = true
+  try {
+    const params: any = {
+      dataCycle: deptFilterIndex.value, // 数据周期
+      orderType: rankingOrderType.value // 排序类型
+    }
+    
+    // 如果指定了部门ID，则查询该部门的下级部门
+    if (deptId) {
+      params.deptId = deptId
+      params.orgCycle = 2 // 2=查询下级部门
+    } else {
+      params.orgCycle = 1 // 1=查询一级部门
+    }
+    
+    // 后端返回什么就显示什么，不做特殊处理
+    boardInfo.value = await BoardApi.getBoardInfo(params)
+    
+    nextTick(() => {
+      renderChart()
+    })
+  } finally {
+    boardLoading.value = false
   }
-  boardInfo.value = await BoardApi.getBoardInfo(params)
-  nextTick(() => {
-    renderChart()
-  })
 }
 
 // 渲染图表
@@ -687,7 +714,7 @@ const loadNavigationTasks = async () => {
       pageSize: navigationPagination.pageSize
     }
     
-    // 如果是部门看板，使用部门任务筛选条件
+    // 如果是部门看板（boardType=3），使用部门任务筛选条件
     if (boardType.value === 3) {
       params.deptId = currentDeptId.value
       params.status = deptTaskForm.status === -1 ? undefined : deptTaskForm.status
@@ -695,8 +722,31 @@ const loadNavigationTasks = async () => {
       if (deptTaskForm.userId) {
         params.userId = deptTaskForm.userId
       }
-    } else {
+    } else if (boardType.value === 2) {
+      // 如果是部门总览页面（boardType=2），项目视图也需要传递当前部门ID
+      // 这样在查看二级部门时，项目视图只显示该部门及其下级的任务
+      if (currentDeptId.value) {
+        params.deptId = currentDeptId.value
+      }
       // 项目视图使用原有筛选条件
+      params.status = navigationForm.status === -1 ? undefined : navigationForm.status
+      params.dataCycle = navigationForm.dataCycle === 0 ? undefined : navigationForm.dataCycle
+      
+      // navigationForm.deptId 用于用户手动选择的部门筛选，优先级更高
+      if (navigationForm.deptId) {
+        params.deptId = navigationForm.deptId
+      }
+      if (navigationForm.userId) {
+        params.userId = navigationForm.userId
+      }
+      if (navigationForm.taskTypeId) {
+        params.taskTypeId = navigationForm.taskTypeId
+      }
+      if (navigationForm.taskProjectId) {
+        params.taskProjectId = navigationForm.taskProjectId
+      }
+    } else {
+      // 其他情况（理论上不会进入）
       params.status = navigationForm.status === -1 ? undefined : navigationForm.status
       params.dataCycle = navigationForm.dataCycle === 0 ? undefined : navigationForm.dataCycle
       
@@ -849,7 +899,8 @@ const getNavigationDeptUsers = async () => {
 }
 
 const handleDeptFilterChange = () => {
-  loadBoardInfo()
+  // 筛选条件改变时，保持当前部门ID
+  loadBoardInfo(currentDeptId.value || undefined)
 }
 
 const handleNavigationStatusChange = () => {
@@ -969,13 +1020,78 @@ const handleJumpToTask = (status: number, label: string) => {
 }
 
 const handleDeptClick = async (dept: any) => {
-  if (isAdmin.value && boardType.value === 2) {
-     boardType.value = 3
-     // 兼容不同的字段名：businessId, deptId, id
-     currentDeptId.value = dept.businessId || dept.deptId || dept.id || 0
-     currentDeptName.value = dept.name || dept.deptName || '' // 记录当前部门名称，兼容两种字段名
-     console.log('点击部门:', dept, '部门ID:', currentDeptId.value)
-     await loadDeptDetail()
+  if (!isAdmin.value && boardType.value !== 2) return
+  
+  const deptId = dept.businessId || dept.deptId || dept.id || 0
+  const deptName = dept.name || dept.deptName || ''
+  
+  console.log('点击部门:', dept, '部门ID:', deptId)
+  
+  if (boardType.value === 2) {
+    // 保存当前状态到栈
+    deptLevelStack.value.push({ deptId: currentDeptId.value, deptName: currentDeptName.value })
+    canGoBack.value = true
+    currentDeptId.value = deptId
+    currentDeptName.value = deptName
+    
+    // 先查询该部门的下级部门
+    await loadBoardInfo(deptId)
+    
+    // 判断是否有下级部门
+    const hasSubDepts = boardInfo.value?.detailRespVOList && boardInfo.value.detailRespVOList.length > 0
+    
+    if (!hasSubDepts) {
+      // 没有下级部门：切换到 boardType=3，显示任务列表和员工排名等
+      console.log('该部门没有下级，切换到部门详情视图')
+      boardType.value = 3
+      await loadDeptDetail()
+    }
+    // 如果有下级部门，保持 boardType=2，继续显示下级部门列表
+  }
+}
+
+// 返回上一级
+const handleGoBack = () => {
+  if (boardType.value === 3) {
+    // 从任务列表返回：检查是否有部门层级栈
+    if (deptLevelStack.value.length > 0) {
+      // 有层级栈，返回到上一级部门视图
+      const prevLevel = deptLevelStack.value.pop()!
+      boardType.value = 2
+      currentDeptId.value = prevLevel.deptId
+      currentDeptName.value = prevLevel.deptName
+      loadBoardInfo(currentDeptId.value || undefined)
+      // 如果栈空了且返回到顶层，隐藏返回按钮
+      if (deptLevelStack.value.length === 0 && currentDeptId.value === 0) {
+        canGoBack.value = false
+      }
+    } else {
+      // 没有层级栈，返回到最顶层
+      boardType.value = 2
+      currentDeptId.value = 0
+      currentDeptName.value = ''
+      loadBoardInfo()
+      canGoBack.value = false
+    }
+  } else if (boardType.value === 2) {
+    // 从部门列表返回：弹出层级栈
+    if (deptLevelStack.value.length > 0) {
+      const prevLevel = deptLevelStack.value.pop()!
+      currentDeptId.value = prevLevel.deptId
+      currentDeptName.value = prevLevel.deptName
+      loadBoardInfo(currentDeptId.value || undefined)
+      // 如果栈空了且返回到顶层，隐藏返回按钮
+      if (deptLevelStack.value.length === 0 && currentDeptId.value === 0) {
+        canGoBack.value = false
+      }
+    } else {
+      // 已经是最顶层（理论上不应该走到这里）
+      boardType.value = 2
+      currentDeptId.value = 0
+      currentDeptName.value = ''
+      loadBoardInfo()
+      canGoBack.value = false
+    }
   }
 }
 
@@ -1098,14 +1214,21 @@ const handleFocusTimeFilterChange = () => {
 }
 
 const handleRankingItemClick = async (dept: any) => {
-  if (isAdmin.value && boardType.value === 2) {
-    boardType.value = 3
-    // 兼容不同的字段名：businessId, deptId, id
-    currentDeptId.value = dept.businessId || dept.deptId || dept.id || 0
-    currentDeptName.value = dept.deptName || dept.name || '' // 记录当前部门名称，兼容两种字段名
-    console.log('点击排名:', dept, '部门ID:', currentDeptId.value)
-    await loadDeptDetail()
-  }
+  // 排行榜点击：保存当前状态，切换到任务详情
+  if (!isAdmin.value && boardType.value !== 2) return
+  
+  const deptId = dept.businessId || dept.deptId || dept.id || 0
+  const deptName = dept.deptName || dept.name || ''
+  
+  console.log('点击排名:', dept, '部门ID:', deptId)
+  
+  // 保存当前状态到栈
+  deptLevelStack.value.push({ deptId: currentDeptId.value, deptName: currentDeptName.value })
+  canGoBack.value = true
+  boardType.value = 3
+  currentDeptId.value = deptId
+  currentDeptName.value = deptName
+  await loadDeptDetail()
 }
 
 const handleTaskClick = (task: TaskVO) => {
@@ -1114,7 +1237,12 @@ const handleTaskClick = (task: TaskVO) => {
 }
 
 const handleRefresh = () => {
-  loadBoardInfo()
+  // 刷新时保持当前部门ID
+  if (boardType.value === 2) {
+    loadBoardInfo(currentDeptId.value || undefined)
+  } else if (boardType.value === 3) {
+    loadDeptDetail()
+  }
   if (activeDeptTab.value === 'navigation') {
     loadNavigationTasks()
   }
@@ -1144,6 +1272,10 @@ const getStatusColor = (status: number) => {
 }
 
 onMounted(() => {
+  // 清空部门层级栈
+  deptLevelStack.value = []
+  canGoBack.value = false
+  
   // 如果不是管理员（即是 leader），直接进入部门详情视图
   if (!isAdmin.value) {
     const user = userStore.getUser
@@ -1170,6 +1302,35 @@ $bg-color: #f5f7fa;
 // 外层容器 - 减少内边距
 .leader-board {
   padding: 0;
+  
+  // 头部返回按钮和标题 - 两侧对齐
+  .board-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    
+    .back-btn {
+      font-size: 14px;
+      color: var(--el-text-color-secondary);
+      
+      &:hover {
+        color: var(--el-color-primary);
+      }
+    }
+    
+    .current-dept-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+      line-height: 1.2;
+    }
+  }
   
   // 统一所有卡片的基础样式
   :deep(.el-card) {
@@ -2128,6 +2289,10 @@ $bg-color: #f5f7fa;
   
   // 部门看板头部
   .board-header {
+    background: var(--el-bg-color-overlay);
+    border-color: var(--el-border-color);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    
     .back-btn {
       color: var(--el-text-color-secondary);
       

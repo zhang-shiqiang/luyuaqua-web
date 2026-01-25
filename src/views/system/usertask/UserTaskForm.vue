@@ -482,13 +482,14 @@ const initData = async () => {
   await getWorkContentList()
   await getTaskTargetList()
   await getProjectList()
+  // 加载全部协同人员（不限制部门）
+  await loadAllCollaborativePersonnel()
   // 获取当前用户部门信息
   const userInfo = JSON.parse(localStorage.getItem('user') || '{}')
   const userInfoData = JSON.parse(userInfo.v || '{}')
   const currentDeptId = userInfoData?.user?.deptId
   if (currentDeptId) {
     await getDeptUsers(currentDeptId)
-    await loadCollaborativePersonnel(currentDeptId)
     // 自动获取"常规事项"并加载子类型
     await getTaskTypeList(currentDeptId)
   }
@@ -534,8 +535,7 @@ const handleSelectDept = async (val) => {
   userList.value = data
   // 更新任务类型列表
   await getTaskTypeList(val)
-  // 更新协同人员列表
-  loadCollaborativePersonnel(val)
+  // 协同人员列表不再根据部门更新，保持全部人员
 }
 
 /** 查询部门列表 */
@@ -649,6 +649,18 @@ const loadCollaborativePersonnel = async (deptId: number) => {
   try {
     if (!deptId) return
     const data = await UserApi.getDeptUsers({ id: deptId } as any)
+    collaborativePersonnel.value = data || []
+  } catch (error) {
+    console.error('获取协同人员失败', error)
+  }
+}
+
+/**
+ * 加载全部协同人员列表
+ */
+const loadAllCollaborativePersonnel = async () => {
+  try {
+    const data = await UserApi.getSimpleUserList()
     collaborativePersonnel.value = data || []
   } catch (error) {
     console.error('获取协同人员失败', error)

@@ -300,7 +300,13 @@
         align="center"
         fixed
         prop="title"
-      />
+      >
+        <template #default="scope">
+          <el-link type="primary" @click="handleViewDetail(scope.row.id)">
+            {{ scope.row.title }}
+          </el-link>
+        </template>
+      </el-table-column>
       <el-table-column label="部门" width="120" align="center" prop="deptName" />
       <el-table-column label="责任人" width="120" align="center" prop="userName" />
       <el-table-column label="任务状态" align="center" width="120" prop="status">
@@ -402,8 +408,16 @@
         prop="content"
         show-overflow-tooltip
       />
-      <el-table-column label="操作" fixed="right" align="center" min-width="180px">
+      <el-table-column label="操作" fixed="right" align="center" min-width="240px">
         <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            @click="handleViewDetail(scope.row.id)"
+            v-hasPermi="['system:user-task:query']"
+          >
+            详情
+          </el-button>
           <el-button
             link
             type="primary"
@@ -450,6 +464,12 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <UserTaskForm ref="formRef" @success="getList" />
+  <!-- 任务详情弹窗 -->
+  <TaskDetailDialog
+    v-model="showTaskDetail"
+    :task-id="currentTaskId"
+    @refresh="getList"
+  />
   <!-- 上传附件弹窗 -->
   <UploadAttachmentForm ref="uploadAttachmentFormRef" @success="handleUploadSuccess" />
   <!-- 附件列表弹窗 -->
@@ -471,6 +491,7 @@ import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { UserTaskApi, UserTask } from '@/api/system/usertask'
 import UserTaskForm from './UserTaskForm.vue'
+import TaskDetailDialog from '../board/TaskDetailDialog.vue'
 import TaskProgressInfoList from './components/TaskProgressInfoList.vue'
 import UploadAttachmentForm from './components/UploadAttachmentForm.vue'
 import TaskAttachmentList from './components/TaskAttachmentList.vue'
@@ -609,6 +630,14 @@ const resetQuery = () => {
 const formRef = ref()
 const openForm = (type: string, id?: number) => {
   formRef.value.open(type, id)
+}
+
+/** 查看详情操作 */
+const showTaskDetail = ref(false)
+const currentTaskId = ref(0)
+const handleViewDetail = (taskId: number) => {
+  currentTaskId.value = taskId
+  showTaskDetail.value = true
 }
 
 /** 上传附件操作 */

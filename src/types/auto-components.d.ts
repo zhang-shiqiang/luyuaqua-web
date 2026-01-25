@@ -187,6 +187,7 @@ declare module 'vue' {
     SummaryCard: typeof import('./../components/SummaryCard/index.vue')['default']
     Table: typeof import('./../components/Table/src/Table.vue')['default']
     TableSelectForm: typeof import('./../components/Table/src/TableSelectForm.vue')['default']
+    TaskDetailDialog: typeof import('./../views/system/usertask/components/TaskDetailDialog.vue')['default']
     TimeEventConfig: typeof import('./../components/bpmnProcessDesigner/package/penal/time-event-config/TimeEventConfig.vue')['default']
     Tinyflow: typeof import('./../components/Tinyflow/Tinyflow.vue')['default']
     Tooltip: typeof import('./../components/Tooltip/src/Tooltip.vue')['default']
