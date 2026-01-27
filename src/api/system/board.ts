@@ -144,6 +144,7 @@ export interface TaskPageReqVO {
 
 /** 员工排名请求 VO */
 export interface EmployeeRankReqVO {
+  orgCycle?: number // 组织周期: 对应boardType
   dataCycle?: number // 0全部 1月度 2本周 3当天
   orderType?: number // 0任务数量 1及时完成率 2延期率 3任务平均时长
   deptId?: number | string // 部门ID（可选）
@@ -151,12 +152,15 @@ export interface EmployeeRankReqVO {
 
 /** 员工总结请求 VO */
 export interface EmployeeSummaryReqVO {
+  orgCycle?: number // 组织周期: 对应boardType
   dataCycle?: number // 0全部 1月度 2本周 3当天
+  orderType?: number // 排序类型: 0任务数量 1及时完成率 2延期率 3任务平均时长
   deptId?: number | string // 部门ID（可选）
 }
 
 /** 专注时长请求 VO */
 export interface FocusTimeReqVO {
+  orgCycle?: number // 组织周期: 对应boardType
   dataCycle?: number // 0全部 1本月 2本周 3今天
   deptId?: number | string // 部门ID（可选）
 }

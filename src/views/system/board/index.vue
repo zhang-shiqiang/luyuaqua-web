@@ -200,7 +200,9 @@
                   v-model="navigationForm.projectIndex"
                   placeholder="全部项目"
                   style="width: 140px"
+                  clearable
                   @change="handleNavigationProjectChange(navigationProjectOptions[navigationForm.projectIndex]?.id || '')"
+                  @clear="handleNavigationProjectClear"
                 >
                   <el-option
                     v-for="(project, index) in navigationProjectOptions"
@@ -215,7 +217,9 @@
                   v-model="navigationForm.taskTypeIndex"
                   placeholder="全部性质"
                   style="width: 120px"
+                  clearable
                   @change="handleNavigationTaskTypeChange(taskTypeOptions[navigationForm.taskTypeIndex]?.value || '')"
+                  @clear="handleNavigationTaskTypeClear"
                 >
                   <el-option
                     v-for="(type, index) in taskTypeOptions"
@@ -230,7 +234,9 @@
                   v-model="navigationForm.deptIndex"
                   placeholder="全部部门"
                   style="width: 140px"
+                  clearable
                   @change="handleNavigationDeptChange(navigationDeptOptions[navigationForm.deptIndex]?.id || '')"
+                  @clear="handleNavigationDeptClear"
                 >
                   <el-option
                     v-for="(dept, index) in navigationDeptOptions"
@@ -245,7 +251,9 @@
                   v-model="navigationForm.userIndex"
                   placeholder="全部员工"
                   style="width: 140px"
+                  clearable
                   @change="handleNavigationUserChange(navigationUserOptionsWithAll[navigationForm.userIndex]?.id || '')"
+                  @clear="handleNavigationUserClear"
                 >
                   <el-option
                     v-for="(user, index) in navigationUserOptionsWithAll"
@@ -260,7 +268,9 @@
                   v-model="navigationForm.dataCycleIndex"
                   placeholder="全部时间"
                   style="width: 120px"
+                  clearable
                   @change="handleNavigationDataCycleChange(dataCycleOptions[navigationForm.dataCycleIndex]?.value || 0)"
+                  @clear="handleNavigationDataCycleClear"
                 >
                   <el-option
                     v-for="(cycle, index) in dataCycleOptions"
@@ -365,6 +375,27 @@
 
         <!-- 任务列表内容 -->
         <div v-show="activeDetailTab === 'task'" class="dept-tab-content">
+          <!-- 正在执行的任务 -->
+          <div v-if="boardInfo?.focusTaskList && boardInfo.focusTaskList.length > 0" class="focus-task-section">
+            <div class="section-title">正在执行</div>
+            <div class="focus-task-list">
+              <el-card
+                v-for="(task, index) in boardInfo.focusTaskList"
+                :key="index"
+                class="focus-task-card"
+                shadow="hover"
+                @click="handleTaskClick(task)"
+              >
+                <div class="focus-task-header">
+                  <span class="focus-task-title">{{ task.title }}</span>
+                  <el-tag :type="getStatusType(task.status)" size="small">{{ getStatusText(task.status) }}</el-tag>
+                </div>
+                <div class="focus-task-user">处理人：{{ task.userName }}</div>
+                <el-progress :percentage="task.progress || 0" :stroke-width="6" />
+              </el-card>
+            </div>
+          </div>
+
           <!-- 任务列表筛选条件 -->
           <div class="task-filter-section">
             <el-space wrap>
@@ -373,7 +404,9 @@
                 v-model="deptTaskForm.status"
                 placeholder="任务状态"
                 style="width: 120px"
+                clearable
                 @change="handleDeptTaskFilterChange"
+                @clear="handleDeptTaskStatusClear"
               >
                 <el-option label="全部状态" :value="-1" />
                 <el-option label="待处理" :value="0" />
@@ -382,12 +415,48 @@
                 <el-option label="已延期" :value="3" />
               </el-select>
               
+              <!-- 项目性质 -->
+              <el-select
+                v-model="deptTaskForm.taskTypeId"
+                placeholder="全部性质"
+                style="width: 120px"
+                clearable
+                @change="handleDeptTaskFilterChange"
+                @clear="handleDeptTaskTypeClear"
+              >
+                <el-option
+                  v-for="type in taskTypeOptions"
+                  :key="type.value"
+                  :label="type.label"
+                  :value="type.value"
+                />
+              </el-select>
+              
+              <!-- 任务分类 -->
+              <el-select
+                v-model="deptTaskForm.taskClass"
+                placeholder="全部分类"
+                style="width: 120px"
+                clearable
+                @change="handleDeptTaskFilterChange"
+                @clear="handleDeptTaskClassClear"
+              >
+                <el-option
+                  v-for="taskClass in taskClassOptions"
+                  :key="taskClass.value"
+                  :label="taskClass.text"
+                  :value="taskClass.value"
+                />
+              </el-select>
+              
               <!-- 时间维度 -->
               <el-select
                 v-model="deptTaskForm.dataCycle"
                 placeholder="时间维度"
                 style="width: 120px"
+                clearable
                 @change="handleDeptTaskFilterChange"
+                @clear="handleDeptTaskDataCycleClear"
               >
                 <el-option label="全部时间" :value="0" />
                 <el-option label="今日" :value="3" />
@@ -604,7 +673,9 @@ const deptUserOptions = ref<Array<{ nickname: string; id: number | string }>>([]
 const deptTaskForm = reactive({
   status: -1, // 任务状态
   dataCycle: 0, // 时间维度
-  userId: '' // 员工ID
+  userId: '', // 员工ID
+  taskTypeId: '', // 项目性质
+  taskClass: '' // 任务分类
 })
 
 // 项目视图相关
@@ -632,6 +703,9 @@ const dataCycleOptions = ref([
   { label: '本周', value: 2 },
   { label: '本月', value: 1 }
 ])
+const taskClassOptions = ref<Array<{ text: string; value: number | string }>>([
+  { text: '全部分类', value: '' }
+])
 const navigationForm = reactive({
   statusIndex: 0,
   status: -1,
@@ -657,6 +731,8 @@ const currentTaskId = ref(0)
 
 // 获取看板数据
 const loadBoardInfo = async (deptId?: number) => {
+  console.log('🟠 loadBoardInfo 被调用, deptId:', deptId, ', boardType:', boardType.value, new Error().stack)
+  
   boardLoading.value = true
   try {
     const params: any = {
@@ -671,6 +747,8 @@ const loadBoardInfo = async (deptId?: number) => {
     } else {
       params.orgCycle = 1 // 1=查询一级部门
     }
+    
+    console.log('🟠 loadBoardInfo 请求参数:', params)
     
     // 后端返回什么就显示什么，不做特殊处理
     boardInfo.value = await BoardApi.getBoardInfo(params)
@@ -716,11 +794,20 @@ const loadNavigationTasks = async () => {
     
     // 如果是部门看板（boardType=3），使用部门任务筛选条件
     if (boardType.value === 3) {
+      // 与移动端保持一致的参数
+      params.orgCycle = boardType.value // 组织周期，对应boardType
+      params.dataCycle = deptTaskForm.dataCycle // dataCycle 直接传递，包括0（全部时间）
+      params.orderType = 0 // 排序类型，默认为0
       params.deptId = currentDeptId.value
       params.status = deptTaskForm.status === -1 ? undefined : deptTaskForm.status
-      params.dataCycle = deptTaskForm.dataCycle === 0 ? undefined : deptTaskForm.dataCycle
       if (deptTaskForm.userId) {
         params.userId = deptTaskForm.userId
+      }
+      if (deptTaskForm.taskTypeId) {
+        params.taskTypeId = deptTaskForm.taskTypeId
+      }
+      if (deptTaskForm.taskClass) {
+        params.taskClass = deptTaskForm.taskClass
       }
     } else if (boardType.value === 2) {
       // 如果是部门总览页面（boardType=2），项目视图也需要传递当前部门ID
@@ -730,7 +817,7 @@ const loadNavigationTasks = async () => {
       }
       // 项目视图使用原有筛选条件
       params.status = navigationForm.status === -1 ? undefined : navigationForm.status
-      params.dataCycle = navigationForm.dataCycle === 0 ? undefined : navigationForm.dataCycle
+      params.dataCycle = navigationForm.dataCycle // dataCycle 直接传递，包括0（全部时间）
       
       // navigationForm.deptId 用于用户手动选择的部门筛选，优先级更高
       if (navigationForm.deptId) {
@@ -748,7 +835,7 @@ const loadNavigationTasks = async () => {
     } else {
       // 其他情况（理论上不会进入）
       params.status = navigationForm.status === -1 ? undefined : navigationForm.status
-      params.dataCycle = navigationForm.dataCycle === 0 ? undefined : navigationForm.dataCycle
+      params.dataCycle = navigationForm.dataCycle // dataCycle 直接传递，包括0（全部时间）
       
       if (navigationForm.deptId) {
         params.deptId = navigationForm.deptId
@@ -771,9 +858,11 @@ const loadNavigationTasks = async () => {
       }
     })
     
-    // 项目视图使用 boardDetailPage 接口
+    // 根据不同场景选择不同的接口
     let res: any
-    if (activeDeptTab.value === 'navigation') {
+    
+    // 项目视图（boardType=2的navigation tab）使用 boardDetailPage 接口
+    if (boardType.value === 2 && activeDeptTab.value === 'navigation') {
       res = await BoardApi.getBoardDetailPage(params)
       
       // 处理任务列表数据（支持加载更多）
@@ -795,8 +884,18 @@ const loadNavigationTasks = async () => {
       if (navigationTaskList.value.length >= navigationTotal.value) {
         navigationNoMore.value = true
       }
-    } else {
-      // 其他视图使用普通分页接口
+    }
+    // 部门看板（boardType=3）的任务列表也使用 boardDetailPage 接口
+    else if (boardType.value === 3 && activeDetailTab.value === 'task') {
+      res = await BoardApi.getBoardDetailPage(params)
+      
+      // 处理任务列表数据
+      const taskPage = res.userTaskPage || {}
+      navigationTaskList.value = taskPage.list || []
+      navigationTotal.value = taskPage.total || 0
+    }
+    // 其他情况使用普通分页接口
+    else {
       res = await BoardApi.getTaskPage(params)
       navigationTaskList.value = res.list || []
       navigationTotal.value = res.total || 0
@@ -817,18 +916,82 @@ const handleDeptTaskFilterChange = () => {
   loadNavigationTasks()
 }
 
+// 部门任务状态清空
+const handleDeptTaskStatusClear = () => {
+  deptTaskForm.status = -1
+  navigationPagination.pageNo = 1
+  loadNavigationTasks()
+}
+
+// 部门任务时间维度清空
+const handleDeptTaskDataCycleClear = () => {
+  deptTaskForm.dataCycle = 0
+  navigationPagination.pageNo = 1
+  loadNavigationTasks()
+}
+
+// 部门任务项目性质清空
+const handleDeptTaskTypeClear = () => {
+  deptTaskForm.taskTypeId = ''
+  navigationPagination.pageNo = 1
+  loadNavigationTasks()
+}
+
+// 部门任务分类清空
+const handleDeptTaskClassClear = () => {
+  deptTaskForm.taskClass = ''
+  navigationPagination.pageNo = 1
+  loadNavigationTasks()
+}
+
 // 部门任务筛选重置
 const handleDeptTaskReset = () => {
   deptTaskForm.status = -1
   deptTaskForm.dataCycle = 0
   deptTaskForm.userId = ''
+  deptTaskForm.taskTypeId = ''
+  deptTaskForm.taskClass = ''
   navigationPagination.pageNo = 1
   loadNavigationTasks()
 }
 
 const handleDeptTabChange = () => {
+  // 切换tab时重置所有筛选条件
+  // 1. 重置时间维度筛选器（部门总览和部门总结共用）
+  deptFilterIndex.value = 0
+  
+  // 2. 重置部门总结的排序类型
+  if (activeDeptTab.value === 'ranking') {
+    rankingOrderType.value = 0
+  }
+  
+  // 3. 如果切换到项目视图
   if (activeDeptTab.value === 'navigation') {
+    // 重置项目视图的所有筛选条件
+    navigationForm.statusIndex = 0
+    navigationForm.status = -1
+    navigationForm.projectIndex = 0
+    navigationForm.taskProjectId = null
+    navigationForm.taskTypeIndex = 0
+    navigationForm.taskTypeId = ''
+    navigationForm.deptIndex = 0
+    navigationForm.deptId = ''
+    navigationForm.userIndex = 0
+    navigationForm.userId = ''
+    navigationForm.dataCycleIndex = 0
+    navigationForm.dataCycle = 0
+    navigationPagination.pageNo = 1
+    navigationNoMore.value = false
+    
+    // 加载项目视图数据
     handleNavigationTabClick()
+  } else {
+    // 切换到部门总览或部门总结时，重新加载数据
+    if (boardType.value === 2) {
+      loadBoardInfo(currentDeptId.value || undefined)
+    } else if (boardType.value === 3) {
+      loadDeptDetail()
+    }
   }
 }
 
@@ -884,6 +1047,24 @@ const getProjectListForNavigation = async () => {
   }
 }
 
+// 获取任务分类列表
+const getTaskClassList = async () => {
+  try {
+    const res = await TaskClassApi.getTaskClassList({ classType: 1 })
+    const classList = res.list || res || []
+    taskClassOptions.value = [
+      { text: '全部分类', value: '' },
+      ...classList.map((item: any) => ({
+        text: item.name,
+        value: item.id
+      }))
+    ]
+  } catch (err) {
+    console.error('获取任务分类失败', err)
+    ElMessage.error('获取任务分类失败')
+  }
+}
+
 // 获取项目视图部门的员工列表
 const getNavigationDeptUsers = async () => {
   try {
@@ -899,8 +1080,16 @@ const getNavigationDeptUsers = async () => {
 }
 
 const handleDeptFilterChange = () => {
-  // 筛选条件改变时，保持当前部门ID
-  loadBoardInfo(currentDeptId.value || undefined)
+  console.log('🟢 handleDeptFilterChange 被调用, boardType:', boardType.value)
+  
+  // 筛选条件改变时，根据 boardType 调用不同的加载函数
+  if (boardType.value === 3) {
+    // 部门详情视图：重新加载部门详情
+    loadDeptDetail()
+  } else {
+    // 部门总览视图：保持当前部门ID加载数据
+    loadBoardInfo(currentDeptId.value || undefined)
+  }
 }
 
 const handleNavigationStatusChange = () => {
@@ -959,6 +1148,46 @@ const handleNavigationProjectChange = (projectId: number | string | '' | null) =
 const handleNavigationDataCycleChange = (dataCycle: number) => {
   navigationForm.dataCycle = dataCycle
   // 重置分页并查询
+  navigationPagination.pageNo = 1
+  loadNavigationTasks()
+}
+
+// 项目视图项目名称清空
+const handleNavigationProjectClear = () => {
+  navigationForm.projectIndex = 0
+  navigationForm.taskProjectId = null
+  navigationPagination.pageNo = 1
+  loadNavigationTasks()
+}
+
+// 项目视图项目性质清空
+const handleNavigationTaskTypeClear = () => {
+  navigationForm.taskTypeIndex = 0
+  navigationForm.taskTypeId = ''
+  navigationPagination.pageNo = 1
+  loadNavigationTasks()
+}
+
+// 项目视图部门清空
+const handleNavigationDeptClear = () => {
+  navigationForm.deptIndex = 0
+  navigationForm.deptId = ''
+  navigationPagination.pageNo = 1
+  loadNavigationTasks()
+}
+
+// 项目视图员工清空
+const handleNavigationUserClear = () => {
+  navigationForm.userIndex = 0
+  navigationForm.userId = ''
+  navigationPagination.pageNo = 1
+  loadNavigationTasks()
+}
+
+// 项目视图时间周期清空
+const handleNavigationDataCycleClear = () => {
+  navigationForm.dataCycleIndex = 0
+  navigationForm.dataCycle = 0
   navigationPagination.pageNo = 1
   loadNavigationTasks()
 }
@@ -1044,7 +1273,8 @@ const handleDeptClick = async (dept: any) => {
       // 没有下级部门：切换到 boardType=3，显示任务列表和员工排名等
       console.log('该部门没有下级，切换到部门详情视图')
       boardType.value = 3
-      await loadDeptDetail()
+      // 已经获取了 boardInfo，传递 skipBoardInfo=true 避免重复请求
+      await loadDeptDetail(true)
     }
     // 如果有下级部门，保持 boardType=2，继续显示下级部门列表
   }
@@ -1096,14 +1326,56 @@ const handleGoBack = () => {
 }
 
 // 加载部门详情数据
-const loadDeptDetail = async () => {
+// skipBoardInfo: 是否跳过获取 BoardInfo（如果已经获取过了）
+const loadDeptDetail = async (skipBoardInfo = false) => {
+    console.log('🔵 loadDeptDetail 被调用, skipBoardInfo:', skipBoardInfo, new Error().stack)
+    
     // 1. 获取该部门的BoardInfo (头部统计)
-    const boardParams = {
-        orgCycle: 1,
-        deptId: currentDeptId.value,
-        dataCycle: deptFilterIndex.value
+    let res: any
+    if (!skipBoardInfo) {
+      const boardParams = {
+          orgCycle: boardType.value, // 使用 boardType 作为 orgCycle
+          deptId: currentDeptId.value,
+          dataCycle: deptFilterIndex.value
+      }
+      
+      console.log('🔵 loadDeptDetail 请求参数:', boardParams)
+      res = await BoardApi.getBoardInfo(boardParams)
+    } else {
+      // 使用已经获取的 boardInfo
+      console.log('🔵 loadDeptDetail 跳过 getBoardInfo 请求，使用已有数据')
+      res = boardInfo.value
     }
-    boardInfo.value = await BoardApi.getBoardInfo(boardParams)
+    
+    console.log('getBoardInfo 原始返回数据:', res)
+    console.log('focusTaskList 原始数据:', res.focusTaskList)
+    console.log('focusTaskList 是否为数组:', Array.isArray(res.focusTaskList))
+    
+    // 处理返回数据
+    boardInfo.value = res
+    
+    // 处理 focusTaskList 的数据格式
+    // 如果后端返回的是嵌套结构，需要提取出来
+    if (res.focusTaskList) {
+      // 可能的格式1: 直接是数组
+      if (Array.isArray(res.focusTaskList)) {
+        boardInfo.value.focusTaskList = res.focusTaskList
+      }
+      // 可能的格式2: 是对象，包含 list 或其他字段
+      else if (typeof res.focusTaskList === 'object') {
+        boardInfo.value.focusTaskList = (res.focusTaskList as any).list || 
+                                        (res.focusTaskList as any).records || 
+                                        []
+      }
+      // 其他情况，设为空数组
+      else {
+        boardInfo.value.focusTaskList = []
+      }
+    } else {
+      boardInfo.value.focusTaskList = []
+    }
+    
+    console.log('处理后的 focusTaskList:', boardInfo.value.focusTaskList)
     
     // 如果接口返回了部门名称，更新 currentDeptName
     if (boardInfo.value?.deptName) {
@@ -1113,8 +1385,38 @@ const loadDeptDetail = async () => {
     // 2. 加载部门员工列表
     await loadDeptUsers()
 
-    // 3. 根据当前 tab 加载对应数据
-    handleDetailTabChange(activeDetailTab.value)
+    // 3. 使用 nextTick 确保 DOM 更新后再加载 tab 数据，避免与 el-tabs 的内部事件冲突
+    await nextTick()
+    
+    // 设置标志位，然后延迟一帧加载数据
+    isLoadingDetailTab = true
+    setTimeout(async () => {
+      try {
+        // 根据当前 tab 加载对应数据
+        if (activeDetailTab.value === 'task') {
+          // 重置任务列表筛选条件
+          deptTaskForm.status = -1
+          deptTaskForm.dataCycle = 0
+          deptTaskForm.userId = ''
+          deptTaskForm.taskTypeId = ''
+          deptTaskForm.taskClass = ''
+          navigationPagination.pageNo = 1
+          await loadNavigationTasks()
+        } else if (activeDetailTab.value === 'employee') {
+          employeeSummaryFilterIndex.value = 0
+          await loadEmployeeSummaryList()
+        } else if (activeDetailTab.value === 'rank') {
+          employeeRankFilterIndex.value = 0
+          employeeRankOrderType.value = 0
+          await loadEmployeeRankList()
+        } else if (activeDetailTab.value === 'focus') {
+          focusTimeFilterIndex.value = 0
+          await loadFocusTimeRankList()
+        }
+      } finally {
+        isLoadingDetailTab = false
+      }
+    }, 0)
 }
 
 // 加载部门员工列表
@@ -1132,16 +1434,42 @@ const loadDeptUsers = async () => {
   }
 }
 
-// Tab 切换处理
+// Tab 切换处理（用于处理 tab 切换事件，避免重复加载）
+let isLoadingDetailTab = false // 标志位：防止重复加载
 const handleDetailTabChange = async (tabName: string) => {
-  if (tabName === 'task') {
-    await loadNavigationTasks()
-  } else if (tabName === 'employee') {
-    await loadEmployeeSummaryList()
-  } else if (tabName === 'rank') {
-    await loadEmployeeRankList()
-  } else if (tabName === 'focus') {
-    await loadFocusTimeRankList()
+  // 如果正在加载中，跳过
+  if (isLoadingDetailTab) {
+    return
+  }
+  
+  isLoadingDetailTab = true
+  try {
+    // 切换tab时重置对应的筛选条件
+    if (tabName === 'task') {
+      // 重置任务列表筛选条件
+      deptTaskForm.status = -1
+      deptTaskForm.dataCycle = 0
+      deptTaskForm.userId = ''
+      deptTaskForm.taskTypeId = ''
+      deptTaskForm.taskClass = ''
+      navigationPagination.pageNo = 1
+      await loadNavigationTasks()
+    } else if (tabName === 'employee') {
+      // 重置员工总结筛选条件
+      employeeSummaryFilterIndex.value = 0
+      await loadEmployeeSummaryList()
+    } else if (tabName === 'rank') {
+      // 重置员工排名筛选条件
+      employeeRankFilterIndex.value = 0
+      employeeRankOrderType.value = 0
+      await loadEmployeeRankList()
+    } else if (tabName === 'focus') {
+      // 重置专注时长筛选条件
+      focusTimeFilterIndex.value = 0
+      await loadFocusTimeRankList()
+    }
+  } finally {
+    isLoadingDetailTab = false
   }
 }
 
@@ -1149,8 +1477,10 @@ const handleDetailTabChange = async (tabName: string) => {
 const loadEmployeeSummaryList = async () => {
   try {
     const params = {
+      orgCycle: boardType.value, // 添加组织周期参数
       deptId: currentDeptId.value,
-      dataCycle: employeeSummaryFilterIndex.value
+      dataCycle: employeeSummaryFilterIndex.value,
+      orderType: 0 // 添加默认排序类型
     }
     const res = await BoardApi.getEmployeeSummaryList(params)
     // 处理返回数据格式
@@ -1166,6 +1496,7 @@ const loadEmployeeSummaryList = async () => {
 const loadEmployeeRankList = async () => {
   try {
     const params = {
+      orgCycle: boardType.value, // 添加组织周期参数
       deptId: currentDeptId.value,
       dataCycle: employeeRankFilterIndex.value,
       orderType: employeeRankOrderType.value
@@ -1182,6 +1513,7 @@ const loadEmployeeRankList = async () => {
 const loadFocusTimeRankList = async () => {
   try {
     const params = {
+      orgCycle: boardType.value, // 添加组织周期参数
       deptId: currentDeptId.value,
       dataCycle: focusTimeFilterIndex.value
     }
@@ -1275,6 +1607,9 @@ onMounted(() => {
   // 清空部门层级栈
   deptLevelStack.value = []
   canGoBack.value = false
+  
+  // 加载任务分类列表
+  getTaskClassList()
   
   // 如果不是管理员（即是 leader），直接进入部门详情视图
   if (!isAdmin.value) {
@@ -1548,7 +1883,6 @@ $bg-color: #f5f7fa;
     // 左侧排名
     .ranking-left {
       width: 60px; // 稍微加宽以容纳图标
-      background: #f5f7fa;
       border-right: 1px solid #ebeef5;
       display: flex;
       align-items: center;
@@ -1558,7 +1892,6 @@ $bg-color: #f5f7fa;
       color: $text-secondary;
       
       &.top-ranking {
-        background: #fff;
         color: #e6a23c;
 
       }
@@ -1895,6 +2228,64 @@ $bg-color: #f5f7fa;
     padding: 16px;
     min-height: 400px;
     
+    // 正在执行任务区域
+    .focus-task-section {
+      margin-bottom: 16px;
+      
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+        margin-bottom: 12px;
+        padding-left: 8px;
+        border-left: 3px solid var(--el-color-primary);
+      }
+      
+      .focus-task-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+        
+        .focus-task-card {
+          cursor: pointer;
+          transition: all 0.3s;
+          
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+          
+          :deep(.el-card__body) {
+            padding: 12px;
+          }
+          
+          .focus-task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            
+            .focus-task-title {
+              font-size: 14px;
+              font-weight: 600;
+              color: var(--el-text-color-primary);
+              flex: 1;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              margin-right: 8px;
+            }
+          }
+          
+          .focus-task-user {
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+            margin-bottom: 8px;
+          }
+        }
+      }
+    }
+    
     // 任务筛选区域
     .task-filter-section {
       margin-bottom: 16px;
@@ -2227,13 +2618,8 @@ $bg-color: #f5f7fa;
       border-color: var(--el-fill-color-dark);
       
       .ranking-left {
-        background: var(--el-fill-color);
         border-right-color: var(--el-fill-color-darker);
         color: var(--el-text-color-secondary);
-        
-        &.top-ranking {
-          background: var(--el-bg-color-overlay);
-        }
       }
       
       .ranking-content {
