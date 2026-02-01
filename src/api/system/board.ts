@@ -165,6 +165,44 @@ export interface FocusTimeReqVO {
   deptId?: number | string // 部门ID（可选）
 }
 
+/** 项目看板请求 VO */
+export interface BoardProjectReqVO {
+  projectId?: number | string // 项目ID
+  dataCycle: number // 数据维度（0-全部 1-本月 2-本周 3-今日）
+  startDate?: string // 开始日期
+  endDate?: string // 结束日期
+  status?: number // 状态
+}
+
+/** 项目成员评价数据 VO */
+export interface ProjectUserEvaVO {
+  projectId: number // 项目id
+  projectName: string // 项目名称
+  userId: number // 用户id
+  userName: string // 用户名称
+  deptId: number // 部门ID
+  deptName: string // 部门名称
+  taskAchievementRate: number // 任务达成率(前端在后面加个%号就行)
+  completeRate: number // 及时完成率（按时完成/按时完成+延期完成）
+  delayRate: number // 延期率（延期/进行中+延期）
+  totalDelayRate: number // 累计延期比例（累计延期比率=累计延期时长/（有效工作时长+累计延期时长））
+  workTimeString: string // 有效工作时长（天+小时）-前端展现
+  delayTimeString: string // 累计延期工作时长（天+小时）-前端展现
+  onceCompleteRate: number // 一次性通过率（延期数量/任务总量）
+  reworkCount: number // 返工次数
+}
+
+/** 项目成员得分 VO */
+export interface ProjectUserScoreVO {
+  projectId: number // 项目id
+  projectName: string // 项目名称
+  userId: number // 用户id
+  userName: string // 用户名称
+  deptId: number // 部门ID
+  deptName: string // 部门名称
+  score: number // 得分
+}
+
 /** 部门筛选请求 VO */
 export interface DeptFilterReqVO {
   orgCycle?: number // 组织周期: 0全部 1仅本部门
@@ -257,5 +295,15 @@ export const BoardApi = {
   // 获取部门总结列表
   getDeptSummaryList: async (params: DeptFilterReqVO): Promise<DepartmentSummaryVO[]> => {
     return await request.get({ url: '/system/user-task/dept-summary', params })
+  },
+
+  // 获取项目成员评价数据报告
+  getProjectUserEvaList: async (params: { boardProjectReqVO: string }): Promise<any> => {
+    return await request.get({ url: '/system/board/listProjectUserEva', params })
+  },
+
+  // 获取项目成员得分总结
+  getProjectUserScoreList: async (params: { boardProjectReqVO: string }): Promise<any> => {
+    return await request.get({ url: '/system/board/listProjectUserScore', params })
   }
 }

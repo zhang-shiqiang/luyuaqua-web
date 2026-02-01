@@ -67,6 +67,7 @@
           <el-tab-pane label="部门总览" name="summary" />
           <el-tab-pane label="部门总结" name="ranking" />
           <el-tab-pane label="项目视图" name="navigation" />
+          <el-tab-pane label="项目考核" name="assessment" />
         </el-tabs>
 
         <!-- 部门总览内容 -->
@@ -365,6 +366,122 @@
                 <span>暂无任务数据</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- 项目考核内容 -->
+        <div v-show="activeDeptTab === 'assessment'" class="assessment-view">
+          <!-- 嵌套子Tab -->
+          <el-tabs v-model="activeAssessmentTab" @tab-change="handleAssessmentTabChange">
+            <el-tab-pane label="项目成员评价数据报告" name="evaluation" />
+            <el-tab-pane label="项目成员得分总结" name="score" />
+          </el-tabs>
+
+          <!-- 评价数据报告内容 -->
+          <div v-show="activeAssessmentTab === 'evaluation'" class="evaluation-content">
+            <!-- 筛选条件 -->
+            <div class="content-filter">
+              <el-radio-group v-model="evaluationFilterIndex" @change="handleEvaluationFilterChange">
+                <el-radio-button :label="0">全部</el-radio-button>
+                <el-radio-button :label="1">当月</el-radio-button>
+                <el-radio-button :label="2">当周</el-radio-button>
+              </el-radio-group>
+            </div>
+
+            <!-- 评价数据表格 -->
+            <el-table
+              v-loading="evaluationLoading"
+              :data="evaluationList"
+              :stripe="true"
+              style="width: 100%"
+              border
+            >
+              <el-table-column type="index" width="68" label="序号" align="center" />
+              <el-table-column prop="userName" label="姓名" width="120" align="center" />
+              <el-table-column prop="deptName" label="部门" width="150" align="center" />
+              <el-table-column label="关键任务完成率" width="150" align="center">
+                <template #default="{ row }">
+                  <span>{{ row.taskAchievementRate }}%</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="交付及时性与计划管理" align="center">
+                <el-table-column label="及时完成" width="120" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.completeRate }}%</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="未完成延期率" width="130" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.delayRate }}%</span>
+                  </template>
+                </el-table-column>
+              </el-table-column>
+              <el-table-column label="工作负荷与投入有效性" align="center">
+                <el-table-column label="累计延期比率" width="130" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.totalDelayRate }}%</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="有效工作时长" width="150" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.workTimeString }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="累计延期时长" width="150" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.delayTimeString }}</span>
+                  </template>
+                </el-table-column>
+              </el-table-column>
+              <el-table-column label="质量与返工控制" align="center">
+                <el-table-column label="一次通过率" width="120" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.onceCompleteRate }}%</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="返工次数计算" width="130" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.reworkCount }}</span>
+                  </template>
+                </el-table-column>
+              </el-table-column>
+            </el-table>
+
+            <div v-if="!evaluationList.length && !evaluationLoading" class="empty-text">
+              暂无评价数据
+            </div>
+          </div>
+
+          <!-- 得分总结内容 -->
+          <div v-show="activeAssessmentTab === 'score'" class="score-content">
+            <!-- 筛选条件 -->
+            <div class="content-filter">
+              <el-radio-group v-model="scoreFilterIndex" @change="handleScoreFilterChange">
+                <el-radio-button :label="0">全部</el-radio-button>
+                <el-radio-button :label="1">当月</el-radio-button>
+                <el-radio-button :label="2">当周</el-radio-button>
+              </el-radio-group>
+            </div>
+
+            <!-- 得分表格 -->
+            <el-table
+              v-loading="scoreLoading"
+              :data="scoreList"
+              :stripe="true"
+              style="width: 100%"
+              border
+            >
+              <el-table-column type="index" width="68" label="序号" align="center" />
+              <el-table-column prop="userName" label="姓名" width="200" align="center" />
+              <el-table-column prop="deptName" label="部门" width="200" align="center" />
+              <el-table-column label="得分" align="center">
+                <template #default="{ row }">
+                  <span class="score-value">{{ row.score }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <div v-if="!scoreList.length && !scoreLoading" class="empty-text">暂无得分数据</div>
           </div>
         </div>
       </el-card>
@@ -703,7 +820,9 @@ import {
   type BoardInfoVO,
   type TaskVO,
   type EmployeeSummaryVO,
-  type FocusTimeVO
+  type FocusTimeVO,
+  type ProjectUserEvaVO,
+  type ProjectUserScoreVO
 } from '@/api/system/board'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus' // Added ElMessage
@@ -744,6 +863,15 @@ const employeeRankFilterIndex = ref(0) // 员工排名筛选：0-全部，1-月�
 const employeeRankOrderType = ref(0) // 员工排名排序：0-任务数量，1-及时完成率，2-延期率，3-平均时长
 const focusTimeFilterIndex = ref(0) // 专注时长筛选：0-全部，1-月度，2-本周，3-当天
 const rankingOrderType = ref(0) // 部门总结排序：0-任务数量，1-及时完成率，2-延期率，3-平均时长
+
+// 项目考核相关
+const activeAssessmentTab = ref('evaluation') // evaluation-评价数据报告，score-得分总结
+const evaluationList = ref<ProjectUserEvaVO[]>([]) // 项目成员评价数据列表
+const scoreList = ref<ProjectUserScoreVO[]>([]) // 项目成员得分列表
+const evaluationFilterIndex = ref(0) // 评价数据筛选：0-全部，1-当月，2-当周
+const scoreFilterIndex = ref(0) // 得分筛选：0-全部，1-当月，2-当周
+const evaluationLoading = ref(false) // 评价数据加载状态
+const scoreLoading = ref(false) // 得分加载状态
 
 // 部门任务列表筛选
 const deptUserOptions = ref<Array<{ nickname: string; id: number | string }>>([]) // 部门员工列表
@@ -1072,6 +1200,13 @@ const handleDeptTabChange = () => {
 
     // 加载项目视图数据
     handleNavigationTabClick()
+  } else if (activeDeptTab.value === 'assessment') {
+    // 4. 如果切换到项目考核
+    activeAssessmentTab.value = 'evaluation'
+    evaluationFilterIndex.value = 0
+    scoreFilterIndex.value = 0
+    // 加载评价数据报告
+    loadProjectUserEvaList()
   } else {
     // 切换到部门总览或部门总结时，重新加载数据
     if (boardType.value === 2) {
@@ -1632,6 +1767,93 @@ const handleFocusTimeFilterChange = () => {
   loadFocusTimeRankList()
 }
 
+// ==================== 项目考核相关方法 ====================
+
+// 加载项目成员评价数据报告
+const loadProjectUserEvaList = async () => {
+  evaluationLoading.value = true
+  try {
+    const reqData = {
+      dataCycle: evaluationFilterIndex.value,
+      startDate: '',
+      endDate: '',
+      status: 0
+    }
+    const params = {
+      boardProjectReqVO: JSON.stringify(reqData)
+    }
+    const res = await BoardApi.getProjectUserEvaList(params)
+    // 处理返回数据格式
+    if (res && typeof res === 'object' && 'data' in res) {
+      evaluationList.value = (res as any).data || []
+    } else if (Array.isArray(res)) {
+      evaluationList.value = res
+    } else {
+      evaluationList.value = []
+    }
+  } catch (err) {
+    console.error('获取项目成员评价数据失败', err)
+    ElMessage.error('获取项目成员评价数据失败')
+    evaluationList.value = []
+  } finally {
+    evaluationLoading.value = false
+  }
+}
+
+// 加载项目成员得分总结
+const loadProjectUserScoreList = async () => {
+  scoreLoading.value = true
+  try {
+    const reqData = {
+      dataCycle: scoreFilterIndex.value,
+      startDate: '',
+      endDate: '',
+      status: 0
+    }
+    const params = {
+      boardProjectReqVO: JSON.stringify(reqData)
+    }
+    const res = await BoardApi.getProjectUserScoreList(params)
+    // 处理返回数据格式
+    if (res && typeof res === 'object' && 'data' in res) {
+      scoreList.value = (res as any).data || []
+    } else if (Array.isArray(res)) {
+      scoreList.value = res
+    } else {
+      scoreList.value = []
+    }
+  } catch (err) {
+    console.error('获取项目成员得分数据失败', err)
+    ElMessage.error('获取项目成员得分数据失败')
+    scoreList.value = []
+  } finally {
+    scoreLoading.value = false
+  }
+}
+
+// 评价数据筛选条件变化
+const handleEvaluationFilterChange = () => {
+  loadProjectUserEvaList()
+}
+
+// 得分筛选条件变化
+const handleScoreFilterChange = () => {
+  loadProjectUserScoreList()
+}
+
+// 项目考核子Tab切换
+const handleAssessmentTabChange = (tabName: string) => {
+  if (tabName === 'evaluation') {
+    // 切换到评价数据报告
+    evaluationFilterIndex.value = 0
+    loadProjectUserEvaList()
+  } else if (tabName === 'score') {
+    // 切换到得分总结
+    scoreFilterIndex.value = 0
+    loadProjectUserScoreList()
+  }
+}
+
 const handleRankingItemClick = async (dept: any) => {
   // 排行榜点击：保存当前状态，切换到任务详情
   if (!isAdmin.value && boardType.value !== 2) return
@@ -2046,6 +2268,49 @@ $bg-color: #f5f7fa;
             }
           }
         }
+      }
+    }
+  }
+}
+
+// 项目考核视图
+.assessment-view {
+  background: transparent;
+  padding: 16px 0;
+  border: none;
+
+  :deep(.el-tabs__header) {
+    margin-bottom: 16px;
+  }
+
+  .evaluation-content,
+  .score-content {
+    .empty-text {
+      text-align: center;
+      color: $text-secondary;
+      padding: 40px 0;
+      font-size: 14px;
+    }
+  }
+
+  // 得分值特殊样式
+  .score-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: $primary-color;
+  }
+
+  // 表格样式优化
+  :deep(.el-table) {
+    th.el-table__cell {
+      background-color: #f5f7fa;
+      color: $text-main;
+      font-weight: 600;
+    }
+
+    .el-table__body-wrapper {
+      .el-table__cell {
+        padding: 12px 0;
       }
     }
   }
@@ -2812,6 +3077,27 @@ $bg-color: #f5f7fa;
   .ranking-list-card {
     .card-header {
       color: var(--el-text-color-primary);
+    }
+  }
+
+  // 项目考核暗色模式
+  .assessment-view {
+    .evaluation-content,
+    .score-content {
+      .empty-text {
+        color: var(--el-text-color-secondary);
+      }
+    }
+
+    .score-value {
+      color: var(--el-color-primary);
+    }
+
+    :deep(.el-table) {
+      th.el-table__cell {
+        background-color: var(--el-fill-color);
+        color: var(--el-text-color-primary);
+      }
     }
   }
 
