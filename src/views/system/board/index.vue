@@ -381,53 +381,73 @@
           <div v-show="activeAssessmentTab === 'evaluation'" class="evaluation-content">
             <!-- 筛选条件 -->
             <div class="content-filter">
-              <el-radio-group v-model="evaluationFilterIndex" @change="handleEvaluationFilterChange">
-                <el-radio-button :label="0">全部</el-radio-button>
-                <el-radio-button :label="1">当月</el-radio-button>
-                <el-radio-button :label="2">当周</el-radio-button>
-              </el-radio-group>
+              <el-space wrap>
+                <!-- 项目选择 -->
+                <el-select
+                  v-model="selectedProjectId"
+                  placeholder="选择项目"
+                  style="width: 200px"
+                  @change="handleAssessmentProjectChange"
+                >
+                  <el-option
+                    v-for="project in assessmentProjectList"
+                    :key="project.id"
+                    :label="project.name"
+                    :value="project.id"
+                  />
+                </el-select>
+
+                <!-- 时间维度筛选 -->
+                <el-radio-group v-model="evaluationFilterIndex" @change="handleEvaluationFilterChange">
+                  <el-radio-button :label="0">全部</el-radio-button>
+                  <el-radio-button :label="1">当月</el-radio-button>
+                  <el-radio-button :label="2">当周</el-radio-button>
+                </el-radio-group>
+              </el-space>
             </div>
 
             <!-- 评价数据表格 -->
             <el-table
+              v-if="evaluationList.length > 0 || evaluationLoading"
               v-loading="evaluationLoading"
               :data="evaluationList"
               :stripe="true"
               style="width: 100%"
+              height="600"
               border
             >
               <el-table-column type="index" width="68" label="序号" align="center" />
-              <el-table-column prop="userName" label="姓名" width="120" align="center" />
-              <el-table-column prop="deptName" label="部门" width="150" align="center" />
-              <el-table-column label="关键任务完成率" width="150" align="center">
+              <el-table-column prop="userName" label="姓名" min-width="120" align="center" />
+              <el-table-column prop="deptName" label="部门" min-width="150" align="center" />
+              <el-table-column label="关键任务完成率" min-width="150" align="center">
                 <template #default="{ row }">
                   <span>{{ row.taskAchievementRate }}%</span>
                 </template>
               </el-table-column>
               <el-table-column label="交付及时性与计划管理" align="center">
-                <el-table-column label="及时完成" width="120" align="center">
+                <el-table-column label="及时完成" min-width="120" align="center">
                   <template #default="{ row }">
                     <span>{{ row.completeRate }}%</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="未完成延期率" width="130" align="center">
+                <el-table-column label="未完成延期率" min-width="130" align="center">
                   <template #default="{ row }">
                     <span>{{ row.delayRate }}%</span>
                   </template>
                 </el-table-column>
               </el-table-column>
               <el-table-column label="工作负荷与投入有效性" align="center">
-                <el-table-column label="累计延期比率" width="130" align="center">
+                <el-table-column label="累计延期比率" min-width="130" align="center">
                   <template #default="{ row }">
                     <span>{{ row.totalDelayRate }}%</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="有效工作时长" width="150" align="center">
+                <el-table-column label="有效工作时长" min-width="150" align="center">
                   <template #default="{ row }">
                     <span>{{ row.workTimeString }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="累计延期时长" width="150" align="center">
+                <el-table-column label="累计延期时长" min-width="150" align="center">
                   <template #default="{ row }">
                     <span>{{ row.delayTimeString }}</span>
                   </template>
@@ -447,24 +467,42 @@
               </el-table-column>
             </el-table>
 
-            <div v-if="!evaluationList.length && !evaluationLoading" class="empty-text">
-              暂无评价数据
-            </div>
+            <!-- 空状态 -->
+            <div v-else class="empty-text">暂无评价数据</div>
           </div>
 
           <!-- 得分总结内容 -->
           <div v-show="activeAssessmentTab === 'score'" class="score-content">
             <!-- 筛选条件 -->
             <div class="content-filter">
-              <el-radio-group v-model="scoreFilterIndex" @change="handleScoreFilterChange">
-                <el-radio-button :label="0">全部</el-radio-button>
-                <el-radio-button :label="1">当月</el-radio-button>
-                <el-radio-button :label="2">当周</el-radio-button>
-              </el-radio-group>
+              <el-space wrap>
+                <!-- 项目选择 -->
+                <el-select
+                  v-model="selectedProjectId"
+                  placeholder="选择项目"
+                  style="width: 200px"
+                  @change="handleAssessmentProjectChange"
+                >
+                  <el-option
+                    v-for="project in assessmentProjectList"
+                    :key="project.id"
+                    :label="project.name"
+                    :value="project.id"
+                  />
+                </el-select>
+
+                <!-- 时间维度筛选 -->
+                <el-radio-group v-model="scoreFilterIndex" @change="handleScoreFilterChange">
+                  <el-radio-button :label="0">全部</el-radio-button>
+                  <el-radio-button :label="1">当月</el-radio-button>
+                  <el-radio-button :label="2">当周</el-radio-button>
+                </el-radio-group>
+              </el-space>
             </div>
 
             <!-- 得分表格 -->
             <el-table
+              v-if="scoreList.length > 0 || scoreLoading"
               v-loading="scoreLoading"
               :data="scoreList"
               :stripe="true"
@@ -472,8 +510,8 @@
               border
             >
               <el-table-column type="index" width="68" label="序号" align="center" />
-              <el-table-column prop="userName" label="姓名" width="200" align="center" />
-              <el-table-column prop="deptName" label="部门" width="200" align="center" />
+              <el-table-column prop="userName" label="姓名" align="center" />
+              <el-table-column prop="deptName" label="部门" align="center" />
               <el-table-column label="得分" align="center">
                 <template #default="{ row }">
                   <span class="score-value">{{ row.score }}</span>
@@ -481,7 +519,8 @@
               </el-table-column>
             </el-table>
 
-            <div v-if="!scoreList.length && !scoreLoading" class="empty-text">暂无得分数据</div>
+            <!-- 空状态 -->
+            <div v-else class="empty-text">暂无得分数据</div>
           </div>
         </div>
       </el-card>
@@ -872,6 +911,8 @@ const evaluationFilterIndex = ref(0) // 评价数据筛选：0-全部，1-当月
 const scoreFilterIndex = ref(0) // 得分筛选：0-全部，1-当月，2-当周
 const evaluationLoading = ref(false) // 评价数据加载状态
 const scoreLoading = ref(false) // 得分加载状态
+const assessmentProjectList = ref<Array<{ id: number | string; name: string }>>([]) // 项目列表
+const selectedProjectId = ref<number | string>('') // 选中的项目ID
 
 // 部门任务列表筛选
 const deptUserOptions = ref<Array<{ nickname: string; id: number | string }>>([]) // 部门员工列表
@@ -1205,8 +1246,8 @@ const handleDeptTabChange = () => {
     activeAssessmentTab.value = 'evaluation'
     evaluationFilterIndex.value = 0
     scoreFilterIndex.value = 0
-    // 加载评价数据报告
-    loadProjectUserEvaList()
+    // 加载项目列表（会自动加载第一个项目的数据）
+    loadAssessmentProjectList()
   } else {
     // 切换到部门总览或部门总结时，重新加载数据
     if (boardType.value === 2) {
@@ -1771,16 +1812,16 @@ const handleFocusTimeFilterChange = () => {
 
 // 加载项目成员评价数据报告
 const loadProjectUserEvaList = async () => {
+  if (!selectedProjectId.value) {
+    evaluationList.value = []
+    return
+  }
   evaluationLoading.value = true
   try {
-    const reqData = {
-      dataCycle: evaluationFilterIndex.value,
-      startDate: '',
-      endDate: '',
-      status: 0
-    }
     const params = {
-      boardProjectReqVO: JSON.stringify(reqData)
+      projectId: selectedProjectId.value,
+      dataCycle: evaluationFilterIndex.value,
+      status: 0
     }
     const res = await BoardApi.getProjectUserEvaList(params)
     // 处理返回数据格式
@@ -1802,16 +1843,15 @@ const loadProjectUserEvaList = async () => {
 
 // 加载项目成员得分总结
 const loadProjectUserScoreList = async () => {
+  if (!selectedProjectId.value) {
+    scoreList.value = []
+    return
+  }
   scoreLoading.value = true
   try {
-    const reqData = {
-      dataCycle: scoreFilterIndex.value,
-      startDate: '',
-      endDate: '',
-      status: 0
-    }
     const params = {
-      boardProjectReqVO: JSON.stringify(reqData)
+      projectId: selectedProjectId.value,
+      dataCycle: scoreFilterIndex.value,
     }
     const res = await BoardApi.getProjectUserScoreList(params)
     // 处理返回数据格式
@@ -1850,6 +1890,41 @@ const handleAssessmentTabChange = (tabName: string) => {
   } else if (tabName === 'score') {
     // 切换到得分总结
     scoreFilterIndex.value = 0
+    loadProjectUserScoreList()
+  }
+}
+
+// 获取项目列表
+const loadAssessmentProjectList = async () => {
+  try {
+    const res = await TaskClassApi.getTaskClassList({ classType: 4 })
+    const projectList = res.list || res || []
+    assessmentProjectList.value = projectList.map((item: any) => ({
+      id: item.id,
+      name: item.name
+    }))
+    // 默认选中第一个项目
+    if (assessmentProjectList.value.length > 0) {
+      selectedProjectId.value = assessmentProjectList.value[0].id
+      // 根据当前激活的 tab 加载对应数据
+      if (activeAssessmentTab.value === 'evaluation') {
+        loadProjectUserEvaList()
+      } else if (activeAssessmentTab.value === 'score') {
+        loadProjectUserScoreList()
+      }
+    }
+  } catch (err) {
+    console.error('获取项目列表失败', err)
+    ElMessage.error('获取项目列表失败')
+  }
+}
+
+// 项目选择变化
+const handleAssessmentProjectChange = () => {
+  // 根据当前激活的 tab 重新加载数据
+  if (activeAssessmentTab.value === 'evaluation') {
+    loadProjectUserEvaList()
+  } else if (activeAssessmentTab.value === 'score') {
     loadProjectUserScoreList()
   }
 }

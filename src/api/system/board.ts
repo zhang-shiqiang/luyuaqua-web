@@ -298,12 +298,12 @@ export const BoardApi = {
   },
 
   // 获取项目成员评价数据报告
-  getProjectUserEvaList: async (params: { boardProjectReqVO: string }): Promise<any> => {
+  getProjectUserEvaList: async (params: BoardProjectReqVO): Promise<any> => {
     return await request.get({ url: '/system/board/listProjectUserEva', params })
   },
 
   // 获取项目成员得分总结
-  getProjectUserScoreList: async (params: { boardProjectReqVO: string }): Promise<any> => {
+  getProjectUserScoreList: async (params: BoardProjectReqVO): Promise<any> => {
     return await request.get({ url: '/system/board/listProjectUserScore', params })
   }
 }
