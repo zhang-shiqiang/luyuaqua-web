@@ -7,6 +7,9 @@ export interface TaskClass {
   classType: number // 分类类型必填，1工作范畴2工作内容类型高 3任务目的4、项目名称
   name: string // 分类名称
   sort: number // 排序
+  userIds?: number[] // 负责人ID列表
+  userNames?: string // 负责人姓名（列表展示用）
+  status?: number // 状态：0正常 1停用
 }
 
 // 任务分类 API
@@ -39,5 +42,10 @@ export const TaskClassApi = {
   // 删除任务分类
   deleteTaskClass: async (id: number) => {
     return await request.delete({ url: `/system/task-class/delete?id=` + id })
+  },
+
+  // 禁用分类
+  disableTaskClass: async (id: number) => {
+    return await request.delete({ url: `/system/task-class/disableTaskClass?id=` + id })
   }
 }

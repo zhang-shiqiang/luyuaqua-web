@@ -6,7 +6,7 @@
       :model="queryParams"
       ref="queryFormRef"
       :inline="true"
-      label-width="68px"
+      label-width="78px"
     >
       <el-row :gutter="16">
         <el-col :span="6">
@@ -68,11 +68,20 @@
           <span>{{ getDeptName(scope.row.deptId) }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="负责人" min-width="120" align="center" prop="userNames" show-overflow-tooltip />
+      <el-table-column label="状态" width="100" align="center" prop="status">
+        <template #default="scope">
+          <el-tag :type="scope.row.status === 1 ? 'danger' : 'success'">
+            {{ scope.row.status === 1 ? '停用' : '正常' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="排序" width="100" align="center" prop="sort" />
-      <el-table-column label="操作" align="center" width="180px" fixed="right">
+      <el-table-column label="操作" align="left" width="180px" fixed="right">
         <template #default="scope">
           <el-button link type="primary" @click="openForm('update', scope.row)"> 编辑 </el-button>
           <el-button link type="danger" @click="handleDelete(scope.row.id)"> 删除 </el-button>
+          <el-button link type="warning" @click="handleDisable(scope.row.id)" v-if="scope.row.classType == 4 && scope.row.status == 0">关闭</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -188,6 +197,16 @@ const handleDelete = async (id: number) => {
     await TaskClassApi.deleteTaskClass(id)
     message.success(t('common.delSuccess'))
     // 刷新列表
+    await getList()
+  } catch {}
+}
+
+/** 关闭/禁用分类操作 */
+const handleDisable = async (id: number) => {
+  try {
+    await message.confirm('确定要关闭该分类吗？')
+    await TaskClassApi.disableTaskClass(id)
+    message.success('关闭成功')
     await getList()
   } catch {}
 }

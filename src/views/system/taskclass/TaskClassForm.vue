@@ -23,6 +23,23 @@
           <el-option v-for="dict in deptList" :key="dict.id" :label="dict.name" :value="dict.id" />
         </el-select>
       </el-form-item>
+      <el-form-item label="负责人" prop="userIds">
+        <el-select
+          v-model="formData.userIds"
+          placeholder="请选择责任人"
+          clearable
+          filterable
+          multiple
+          class="!w-100%"
+        >
+          <el-option
+            v-for="user in userList"
+            :key="user.id"
+            :label="user.nickname"
+            :value="user.id"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="排序" prop="sort">
         <el-input-number v-model="formData.sort" :min="0" placeholder="请输入排序" />
       </el-form-item>
@@ -35,6 +52,7 @@
 </template>
 <script setup lang="ts">
 import * as DeptApi from '@/api/system/dept'
+import * as UserApi from '@/api/system/user'
 import { TaskClassApi, TaskClass } from '@/api/system/taskclass'
 
 /** 任务分类 表单 */
@@ -51,8 +69,9 @@ const formData = ref<TaskClass>({
   id: undefined,
   deptId: undefined,
   classType: 1,
-  name: undefined,
-  sort: 1
+  name: '',
+  sort: 1,
+  userIds: []
 })
 const formRules = reactive({
   classType: [{ required: true, message: '分类类型不能为空', trigger: 'change' }],
@@ -69,13 +88,17 @@ const open = async (type: string, row?: TaskClass) => {
   resetForm()
   // 修改时，设置数据
   if (type === 'update' && row) {
-    formData.value = { ...row }
+    formData.value = {
+      ...row,
+      userIds: Array.isArray(row.userIds) ? row.userIds : []
+    }
   }
-  await getDeptList()
+  await Promise.all([getDeptList(), getUserList()])
 }
 
 onMounted(() => {
   getDeptList()
+  getUserList()
 })
 
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
@@ -89,6 +112,17 @@ const getDeptList = async () => {
   } catch (error) {
     console.error('获取部门列表失败', error)
     deptList.value = []
+  }
+}
+
+/** 用户列表（责任人数据源，与任务责任人一致） */
+const userList = ref<any[]>([])
+const getUserList = async () => {
+  try {
+    userList.value = await UserApi.getSimpleUserList()
+  } catch (error) {
+    console.error('获取用户列表失败', error)
+    userList.value = []
   }
 }
 
@@ -125,8 +159,9 @@ const resetForm = () => {
     id: undefined,
     deptId: undefined,
     classType: 1,
-    name: undefined,
-    sort: 1
+    name: '',
+    sort: 1,
+    userIds: []
   }
   formRef.value?.resetFields()
 }
