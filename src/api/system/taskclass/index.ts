@@ -11,6 +11,11 @@ export interface TaskClass {
 
 // 任务分类 API
 export const TaskClassApi = {
+  // 获取我的项目列表（根据权限返回，无需参数）
+  listMyProject: async () => {
+    return await request.get({ url: '/system/task-class/listMyProject' })
+  },
+
   // 查询任务分类列表
   getTaskClassList: async (params?: {
     pageNo?: number

@@ -67,7 +67,7 @@
           <el-tab-pane label="部门总览" name="summary" />
           <el-tab-pane label="部门总结" name="ranking" />
           <el-tab-pane label="项目视图" name="navigation" />
-          <el-tab-pane label="项目考核" name="assessment" />
+          <el-tab-pane v-if="showAssessmentTab" label="项目考核" name="assessment" />
         </el-tabs>
 
         <!-- 部门总览内容 -->
@@ -380,7 +380,7 @@
           <!-- 评价数据报告内容 -->
           <div v-show="activeAssessmentTab === 'evaluation'" class="evaluation-content">
             <!-- 筛选条件 -->
-            <div class="content-filter">
+            <div class="content-filter content-filter-with-rule">
               <el-space wrap>
                 <!-- 项目选择 -->
                 <el-select
@@ -398,12 +398,23 @@
                 </el-select>
 
                 <!-- 时间维度筛选 -->
-                <el-radio-group v-model="evaluationFilterIndex" @change="handleEvaluationFilterChange">
+                <el-radio-group
+                  v-model="evaluationFilterIndex"
+                  @change="handleEvaluationFilterChange"
+                >
                   <el-radio-button :label="0">全部</el-radio-button>
                   <el-radio-button :label="1">当月</el-radio-button>
                   <el-radio-button :label="2">当周</el-radio-button>
                 </el-radio-group>
               </el-space>
+              <el-button
+                link
+                type="primary"
+                @click="showEvaluationRuleDialog = true"
+                class="rule-tip-btn"
+              >
+                <Icon icon="ep:question-filled" /> 评价规则说明
+              </el-button>
             </div>
 
             <!-- 评价数据表格 -->
@@ -469,12 +480,39 @@
 
             <!-- 空状态 -->
             <div v-else class="empty-text">暂无评价数据</div>
+
+            <!-- 评价规则说明弹窗 -->
+            <el-dialog
+              v-model="showEvaluationRuleDialog"
+              title="规则"
+              width="720px"
+              destroy-on-close
+            >
+              <div class="assessment-rule-content">
+                <el-table :data="assessmentRuleTableData" border size="small" class="rule-table">
+                  <el-table-column prop="desc" label="描述" width="140" />
+                  <el-table-column prop="dimension" label="维度" width="100" />
+                  <el-table-column
+                    prop="formula"
+                    label="核心指标及概念"
+                    min-width="200"
+                    show-overflow-tooltip
+                  />
+                  <el-table-column prop="purpose" label="目的" width="120" />
+                  <el-table-column prop="weight" label="权重" width="80" align="center" />
+                </el-table>
+                <p class="rule-note"
+                  ><strong>说明</strong>：重要：一般重要：普通=4:3:2来划分，例如：KTA
+                  =（4+3+2）/（4+3+2）=100%</p
+                >
+              </div>
+            </el-dialog>
           </div>
 
           <!-- 得分总结内容 -->
           <div v-show="activeAssessmentTab === 'score'" class="score-content">
             <!-- 筛选条件 -->
-            <div class="content-filter">
+            <div class="content-filter content-filter-with-rule">
               <el-space wrap>
                 <!-- 项目选择 -->
                 <el-select
@@ -498,6 +536,14 @@
                   <el-radio-button :label="2">当周</el-radio-button>
                 </el-radio-group>
               </el-space>
+              <el-button
+                link
+                type="primary"
+                @click="showScoreRuleDialog = true"
+                class="rule-tip-btn"
+              >
+                <Icon icon="ep:question-filled" /> 得分规则说明
+              </el-button>
             </div>
 
             <!-- 得分表格 -->
@@ -521,6 +567,55 @@
 
             <!-- 空状态 -->
             <div v-else class="empty-text">暂无得分数据</div>
+
+            <!-- 得分规则说明弹窗 -->
+            <el-dialog
+              v-model="showScoreRuleDialog"
+              title="《规则》"
+              width="720px"
+              destroy-on-close
+            >
+              <div class="assessment-rule-content">
+                <p
+                  ><strong>总分计算</strong>：维度1(分)×0.5 + 维度2及时(分)×0.15 +
+                  维度2延期(分)×0.15 + 维度3(分)×0.15 + 维度4(分)×0.1</p
+                >
+                <p
+                  ><strong>评分规则</strong>：5 分制，每个维度按关键指标映射到 1-5
+                  分，再按权重加权汇总。</p
+                >
+
+                <h5>维度 1：目标与关键任务达成（50%）</h5>
+                <el-table :data="dim1Rules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+
+                <h5>维度 2：交付及时性与计划管理（30%）</h5>
+                <p class="sub-title">及时完成率（15%）</p>
+                <el-table :data="dim2TimelyRules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+                <p class="sub-title">未完成延期率（15%）</p>
+                <el-table :data="dim2DelayRules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+
+                <h5>维度 3：有效时间投入（10%）- 累计延期比率</h5>
+                <el-table :data="dim3Rules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+
+                <h5>维度 4：质量与返工控制（10%）- 一次性通过率</h5>
+                <el-table :data="dim4Rules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+              </div>
+            </el-dialog>
           </div>
         </div>
       </el-card>
@@ -881,6 +976,13 @@ const isAdmin = computed(() => {
   return roles && (roles.includes('super_admin') || roles.includes('system_admin'))
 })
 
+// 判断是否显示项目考核页签（系统管理员、超级管理员、项目管理员、公司领导）
+const showAssessmentTab = computed(() => {
+  const roles = userStore.getRoles
+  const assessmentRoles = ['super_admin', 'system_admin', 'project_admin', 'company_leader']
+  return roles && roles.some((r: string) => assessmentRoles.includes(r))
+})
+
 const boardType = ref(2) // 默认部门leader看板
 const canGoBack = ref(false) // 是否可以返回（从boardType=2切换到3时设置为true）
 const deptLevelStack = ref<Array<{ deptId: number; deptName: string }>>([]) // 部门层级栈，用于多级返回
@@ -913,6 +1015,77 @@ const evaluationLoading = ref(false) // 评价数据加载状态
 const scoreLoading = ref(false) // 得分加载状态
 const assessmentProjectList = ref<Array<{ id: number | string; name: string }>>([]) // 项目列表
 const selectedProjectId = ref<number | string>('') // 选中的项目ID
+const showEvaluationRuleDialog = ref(false) // 评价规则说明弹窗
+const showScoreRuleDialog = ref(false) // 得分规则说明弹窗
+
+// 考核规则说明数据
+const assessmentRuleTableData = [
+  {
+    desc: '目标及关键任务达成',
+    dimension: '结果',
+    formula: 'KTA = 计划已完成关键任务权重之和/计划关键任务权重之和×100%',
+    purpose: '完成程度',
+    weight: '50%'
+  },
+  {
+    desc: '交付及时性与计划管理',
+    dimension: '过程/效率',
+    formula:
+      '1.及时完成率=按时完成/（按时完成+延期完成）；2.未完成延期率=未完成延期/（未完成未延期+未完成延期项目）',
+    purpose: '预测性及管控',
+    weight: '30%'
+  },
+  {
+    desc: '有效时间投入',
+    dimension: '投入',
+    formula:
+      '1.累计延期比率=累计延期时长/（有效工作时长+累计延期时长）；2.有效工作时长（专注）；3.累计延期时长',
+    purpose: '工作饱和及产出',
+    weight: '10%'
+  },
+  {
+    desc: '质量与返工控制',
+    dimension: '返工',
+    formula: '1.一次通过率：一次验收通过任务数/到验收任务数；2.返工次数',
+    purpose: '减少堵塞',
+    weight: '10%'
+  }
+]
+const dim1Rules = [
+  { score: '5 分', condition: 'KTA ≥ 95%' },
+  { score: '4 分', condition: '90%–94%' },
+  { score: '3 分', condition: '80%–89%' },
+  { score: '2 分', condition: '60%–79%' },
+  { score: '1 分', condition: '< 60%' }
+]
+const dim2TimelyRules = [
+  { score: '5 分', condition: '及时完成率≥ 95%' },
+  { score: '4 分', condition: '90%–94%' },
+  { score: '3 分', condition: '80%–89%' },
+  { score: '2 分', condition: '60%–79%' },
+  { score: '1 分', condition: '< 60%' }
+]
+const dim2DelayRules = [
+  { score: '5 分', condition: '未完成延期率 ≤ 5%' },
+  { score: '4 分', condition: '>5%–10%' },
+  { score: '3 分', condition: '>10%–20%' },
+  { score: '2 分', condition: '>20%–35%' },
+  { score: '1 分', condition: '>35%' }
+]
+const dim3Rules = [
+  { score: '5 分', condition: '累计延期比率≤ 5%' },
+  { score: '4 分', condition: '>5%–10%' },
+  { score: '3 分', condition: '>10%–20%' },
+  { score: '2 分', condition: '>20%–35%' },
+  { score: '1 分', condition: '>35%' }
+]
+const dim4Rules = [
+  { score: '5 分', condition: '一次性通过率≥ 95%' },
+  { score: '4 分', condition: '90%–94%' },
+  { score: '3 分', condition: '80%–89%' },
+  { score: '2 分', condition: '60%–79%' },
+  { score: '1 分', condition: '< 60%' }
+]
 
 // 部门任务列表筛选
 const deptUserOptions = ref<Array<{ nickname: string; id: number | string }>>([]) // 部门员工列表
@@ -1851,7 +2024,7 @@ const loadProjectUserScoreList = async () => {
   try {
     const params = {
       projectId: selectedProjectId.value,
-      dataCycle: scoreFilterIndex.value,
+      dataCycle: scoreFilterIndex.value
     }
     const res = await BoardApi.getProjectUserScoreList(params)
     // 处理返回数据格式
@@ -1894,10 +2067,10 @@ const handleAssessmentTabChange = (tabName: string) => {
   }
 }
 
-// 获取项目列表
+// 获取项目列表（根据权限返回，无需参数）
 const loadAssessmentProjectList = async () => {
   try {
-    const res = await TaskClassApi.getTaskClassList({ classType: 4 })
+    const res = await TaskClassApi.listMyProject()
     const projectList = res.list || res || []
     assessmentProjectList.value = projectList.map((item: any) => ({
       id: item.id,
@@ -2162,6 +2335,17 @@ $bg-color: #f5f7fa;
 .content-filter {
   justify-content: flex-start;
   margin-bottom: 10px;
+
+  &.content-filter-with-rule {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .rule-tip-btn {
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+  }
 }
 
 .navigation-filter {
@@ -2388,6 +2572,50 @@ $bg-color: #f5f7fa;
         padding: 12px 0;
       }
     }
+  }
+}
+
+// 考核规则说明弹窗
+.assessment-rule-content {
+  max-height: 70vh;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+
+  h4 {
+    margin: 20px 0 12px;
+    font-size: 15px;
+    color: $text-main;
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  h5 {
+    margin: 16px 0 8px;
+    font-size: 14px;
+    color: $text-regular;
+  }
+
+  .sub-title {
+    margin: 8px 0 4px;
+    font-size: 13px;
+    color: $text-secondary;
+  }
+
+  .rule-note {
+    margin: 12px 0;
+    color: $text-secondary;
+    font-size: 13px;
+  }
+
+  .rule-table {
+    margin: 8px 0 16px;
+  }
+
+  p {
+    margin: 8px 0;
+    color: $text-regular;
   }
 }
 
