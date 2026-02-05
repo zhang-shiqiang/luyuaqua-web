@@ -1,10 +1,5 @@
 <template>
-  <el-dialog
-    v-model="dialogVisible"
-    title="任务详情"
-    width="800px"
-    :before-close="handleClose"
-  >
+  <el-dialog v-model="dialogVisible" title="任务详情" width="800px" :before-close="handleClose">
     <el-skeleton :loading="loading" animated>
       <template #template>
         <el-skeleton-item variant="h1" style="width: 50%" />
@@ -32,16 +27,30 @@
               {{ taskDetail.deptName }}
             </el-descriptions-item>
             <el-descriptions-item label="计划开始日期">
-              {{ taskDetail.startDate }}
+              {{
+                taskDetail.startDate
+                  ? dayjs(taskDetail.startDate).format('YYYY-MM-DD HH:mm:ss')
+                  : '--'
+              }}
             </el-descriptions-item>
             <el-descriptions-item label="实际开始时间">
-              {{ taskDetail.actualStartDate || '--' }}
+              {{
+                taskDetail.actualStartDate
+                  ? dayjs(taskDetail.actualStartDate).format('YYYY-MM-DD HH:mm:ss')
+                  : '--'
+              }}
             </el-descriptions-item>
             <el-descriptions-item label="计划完成日期">
-              {{ taskDetail.planEndDate }}
+              {{
+                taskDetail.planEndDate
+                  ? dayjs(taskDetail.planEndDate).format('YYYY-MM-DD HH:mm:ss')
+                  : '--'
+              }}
             </el-descriptions-item>
             <el-descriptions-item label="实际完成时间">
-              {{ taskDetail.endDate || '--' }}
+              {{
+                taskDetail.endDate ? dayjs(taskDetail.endDate).format('YYYY-MM-DD HH:mm:ss') : '--'
+              }}
             </el-descriptions-item>
             <el-descriptions-item label="任务时长">
               {{ taskDetail.spendTimeValue || '--' }}
@@ -57,9 +66,7 @@
                 {{ getStatusText(taskDetail.status) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="进度">
-              {{ taskDetail.progress }}%
-            </el-descriptions-item>
+            <el-descriptions-item label="进度"> {{ taskDetail.progress }}% </el-descriptions-item>
             <el-descriptions-item label="重要程度">
               {{ getImportantFlagText(taskDetail.importantFlag) }}
             </el-descriptions-item>
@@ -76,58 +83,32 @@
         <!-- 主要操作按钮 -->
         <div class="footer-actions">
           <!-- 返工 -->
-          <el-button
-            v-if="canReturnWork"
-            type="danger"
-            @click="showReturnWorkDialog = true"
-          >
+          <el-button v-if="canReturnWork" type="danger" @click="showReturnWorkDialog = true">
             <Icon icon="ep:refresh-left" class="mr-5px" />
             返工
           </el-button>
           <!-- 专注 -->
-          <el-button
-            v-if="canFocus"
-            type="warning"
-            @click="handleSetFocus"
-          >
+          <el-button v-if="canFocus" type="warning" @click="handleSetFocus">
             <Icon icon="ep:star" class="mr-5px" />
             专注
           </el-button>
           <!-- 取消专注 -->
-          <el-button
-            v-if="canCancelFocus"
-            type="warning"
-            plain
-            @click="handleCancelFocus"
-          >
+          <el-button v-if="canCancelFocus" type="warning" plain @click="handleCancelFocus">
             <Icon icon="ep:star" class="mr-5px" />
             取消专注
           </el-button>
           <!-- 更新 -->
-          <el-button
-            v-if="canUpdate"
-            type="primary"
-            @click="showUpdateDialog = true"
-          >
+          <el-button v-if="canUpdate" type="primary" @click="showUpdateDialog = true">
             <Icon icon="ep:edit" class="mr-5px" />
             更新
           </el-button>
           <!-- 完成 -->
-          <el-button
-            v-if="canComplete"
-            type="success"
-            @click="handleComplete"
-          >
+          <el-button v-if="canComplete" type="success" @click="handleComplete">
             <Icon icon="ep:check" class="mr-5px" />
             完成
           </el-button>
           <!-- 取消任务（领导权限） -->
-          <el-button
-            v-if="canCancelTask"
-            type="danger"
-            plain
-            @click="handleCancelTask"
-          >
+          <el-button v-if="canCancelTask" type="danger" plain @click="handleCancelTask">
             <Icon icon="ep:close" class="mr-5px" />
             取消
           </el-button>
@@ -142,11 +123,7 @@
   </el-dialog>
 
   <!-- 更新进度对话框 -->
-  <el-dialog
-    v-model="showUpdateDialog"
-    title="更新任务"
-    width="500px"
-  >
+  <el-dialog v-model="showUpdateDialog" title="更新任务" width="500px">
     <el-form :model="updateForm" label-width="100px">
       <el-form-item label="更新进度" required>
         <el-input-number
@@ -172,11 +149,7 @@
   </el-dialog>
 
   <!-- 返工对话框 -->
-  <el-dialog
-    v-model="showReturnWorkDialog"
-    title="返工更新"
-    width="500px"
-  >
+  <el-dialog v-model="showReturnWorkDialog" title="返工更新" width="500px">
     <el-form :model="returnWorkForm" label-width="100px">
       <el-form-item label="描述" required>
         <el-input
@@ -192,10 +165,10 @@
       <el-button type="primary" @click="handleReturnWork">确定</el-button>
     </template>
   </el-dialog>
-
 </template>
 
 <script setup lang="ts">
+import dayjs from 'dayjs'
 import { ref, computed, watch } from 'vue'
 import { BoardApi, type TaskVO } from '@/api/system/board'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -233,10 +206,7 @@ const returnWorkForm = ref({
 const canReturnWork = computed(() => {
   if (!taskDetail.value) return false
   const userId = userStore.getUser?.id
-  return (
-    [2, 5].includes(taskDetail.value.status) &&
-    taskDetail.value.userId === userId
-  )
+  return [2, 5].includes(taskDetail.value.status) && taskDetail.value.userId === userId
 })
 
 // 专注权限：非养殖部，待处理/进行中/延期状态，未专注，任务责任人
@@ -269,7 +239,7 @@ const canUpdate = computed(() => {
   const userId = userStore.getUser?.id
   const isTaskOwner = taskDetail.value.userId === userId
   const validStatus = [0, 1, 3].includes(taskDetail.value.status)
-  
+
   if (taskDetail.value.deptName === '养殖部') {
     // 养殖部：待处理/进行中/延期，任务责任人
     return isTaskOwner && validStatus
@@ -285,7 +255,7 @@ const canComplete = computed(() => {
   const userId = userStore.getUser?.id
   const isTaskOwner = taskDetail.value.userId === userId
   const validStatus = [0, 1, 3].includes(taskDetail.value.status)
-  
+
   if (taskDetail.value.deptName === '养殖部') {
     // 养殖部：待处理/进行中/延期，任务责任人
     return isTaskOwner && validStatus
@@ -317,17 +287,17 @@ const loadTaskDetail = async () => {
 // 日期格式化工具函数 - 确保返回 YYYY-MM-DD 格式
 const formatDate = (date: any): string | null => {
   if (!date) return null
-  
+
   // 如果已经是 YYYY-MM-DD 格式，直接返回
   if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return date
   }
-  
+
   // 如果是ISO格式日期字符串（如 2024-01-01T00:00:00），提取日期部分
   if (typeof date === 'string' && date.includes('T')) {
     return date.split('T')[0]
   }
-  
+
   // 如果是时间戳或Date对象，转换为YYYY-MM-DD格式
   try {
     const dateObj = new Date(date)
@@ -340,7 +310,7 @@ const formatDate = (date: any): string | null => {
   } catch (e) {
     console.error('日期格式化失败:', e)
   }
-  
+
   return date
 }
 
@@ -357,7 +327,7 @@ const handleUpdate = async () => {
       planEndDate: formatDate(taskDetail.value?.planEndDate),
       endDate: formatDate(taskDetail.value?.endDate)
     }
-    
+
     await BoardApi.updateTask(params)
     ElMessage.success('任务更新成功')
     showUpdateDialog.value = false
@@ -374,14 +344,14 @@ const handleComplete = async () => {
     ElMessage.warning('计划完成日期不能为空')
     return
   }
-  
+
   try {
     await ElMessageBox.confirm('确认完成该任务吗?', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     // 按照移动端格式化参数，格式化日期字段
     const params = {
       ...taskDetail.value,
@@ -391,7 +361,7 @@ const handleComplete = async () => {
       actualStartDate: formatDate(taskDetail.value?.actualStartDate),
       planEndDate: formatDate(taskDetail.value?.planEndDate)
     }
-    
+
     await BoardApi.updateTask(params)
     ElMessage.success('任务完成')
     emit('refresh')
@@ -438,7 +408,7 @@ const handleCancelTask = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     // 按照移动端格式化参数，格式化日期字段
     const params = {
       ...taskDetail.value,
@@ -447,7 +417,7 @@ const handleCancelTask = async () => {
       actualStartDate: formatDate(taskDetail.value?.actualStartDate),
       planEndDate: formatDate(taskDetail.value?.planEndDate)
     }
-    
+
     await BoardApi.updateTask(params)
     ElMessage.success('任务取消成功')
     emit('refresh')
@@ -534,7 +504,7 @@ watch(
     margin-bottom: 16px;
     font-size: 18px;
   }
-  
+
   // 适配 el-descriptions 组件
   :deep(.el-descriptions) {
     .el-descriptions__label,
@@ -542,11 +512,11 @@ watch(
       background-color: transparent;
       border-color: var(--el-border-color-light);
     }
-    
+
     .el-descriptions__label {
       color: var(--el-text-color-secondary);
     }
-    
+
     .el-descriptions__content {
       color: var(--el-text-color-primary);
     }
@@ -559,7 +529,7 @@ watch(
   justify-content: center;
   align-items: center;
   gap: 12px;
-  
+
   .footer-actions {
     display: flex;
     gap: 8px;
@@ -575,18 +545,18 @@ watch(
     h3 {
       color: var(--el-text-color-primary);
     }
-    
+
     :deep(.el-descriptions) {
       .el-descriptions__label,
       .el-descriptions__content {
         background-color: transparent;
         border-color: var(--el-fill-color-dark);
       }
-      
+
       .el-descriptions__label {
         color: var(--el-text-color-secondary);
       }
-      
+
       .el-descriptions__content {
         color: var(--el-text-color-primary);
       }
