@@ -569,12 +569,7 @@
             <div v-else class="empty-text">暂无得分数据</div>
 
             <!-- 得分规则说明弹窗 -->
-            <el-dialog
-              v-model="showScoreRuleDialog"
-              title="《规则》"
-              width="720px"
-              destroy-on-close
-            >
+            <el-dialog v-model="showScoreRuleDialog" title="规则" width="720px" destroy-on-close>
               <div class="assessment-rule-content">
                 <p
                   ><strong>总分计算</strong>：维度1(分)×0.5 + 维度2及时(分)×0.15 +
@@ -966,21 +961,19 @@ import { getSimpleDeptList } from '@/api/system/dept'
 import { getSimpleUserList } from '@/api/system/user'
 import { TaskClassApi } from '@/api/system/taskclass'
 import { Loading } from '@element-plus/icons-vue'
+import { getUserIdentity } from '@/utils/userRole'
 
 defineOptions({ name: 'SystemBoard' })
 
 const userStore = useUserStore()
-// 判断是否是管理员（超级管理员或系统管理员）
 const isAdmin = computed(() => {
-  const roles = userStore.getRoles
-  return roles && (roles.includes('super_admin') || roles.includes('system_admin'))
+  const userRole = getUserIdentity()
+  return userRole === 'admin'
 })
 
-// 判断是否显示项目考核页签（系统管理员、超级管理员、项目管理员、公司领导）
 const showAssessmentTab = computed(() => {
-  const roles = userStore.getRoles
-  const assessmentRoles = ['super_admin', 'system_admin', 'project_admin', 'company_leader']
-  return roles && roles.some((r: string) => assessmentRoles.includes(r))
+  const userRole = getUserIdentity()
+  return userRole === 'admin' || userRole == 'loader'
 })
 
 const boardType = ref(2) // 默认部门leader看板
