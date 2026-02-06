@@ -87,14 +87,22 @@ router.beforeEach(async (to, from, next) => {
         const nextData = to.path === redirect ? { ...to, replace: true } : { path: redirect, query }
         // console.log(nextData, 'nextData')
         // next(nextData)
-        
+
         // 根据用户角色决定跳转路径
         const roles = userStore.getRoles
         let targetPath = '/system/usertask/index' // 默认：普通员工
-          console.log(roles, 'roles');
-          
+        console.log(roles, 'roles')
+
         // 如果是 leader 或 admin（包括 super_admin、system_ad min），跳转到看板
-        if (roles && (roles.includes('leader') || roles.includes('dept_leader') || roles.includes('admin') || roles.includes('super_admin') || roles.includes('system_admin'))) {
+        if (
+          roles &&
+          (roles.includes('leader') ||
+            roles.includes('dept_leader') ||
+            roles.includes('admin') ||
+            roles.includes('super_admin') ||
+            roles.includes('system_admin') ||
+            roles.includes('pm'))
+        ) {
           targetPath = '/system/board/index'
           next({ path: targetPath, replace: true })
           return

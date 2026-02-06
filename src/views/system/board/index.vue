@@ -419,7 +419,6 @@
 
             <!-- 评价数据表格 -->
             <el-table
-              v-if="evaluationList.length > 0 || evaluationLoading"
               v-loading="evaluationLoading"
               :data="evaluationList"
               :stripe="true"
@@ -476,10 +475,10 @@
                   </template>
                 </el-table-column>
               </el-table-column>
+              <template #empty>
+                <span class="empty-text">暂无评价数据</span>
+              </template>
             </el-table>
-
-            <!-- 空状态 -->
-            <div v-else class="empty-text">暂无评价数据</div>
 
             <!-- 评价规则说明弹窗 -->
             <el-dialog
@@ -548,7 +547,6 @@
 
             <!-- 得分表格 -->
             <el-table
-              v-if="scoreList.length > 0 || scoreLoading"
               v-loading="scoreLoading"
               :data="scoreList"
               :stripe="true"
@@ -563,10 +561,10 @@
                   <span class="score-value">{{ row.score }}</span>
                 </template>
               </el-table-column>
+              <template #empty>
+                <span class="empty-text">暂无得分数据</span>
+              </template>
             </el-table>
-
-            <!-- 空状态 -->
-            <div v-else class="empty-text">暂无得分数据</div>
 
             <!-- 得分规则说明弹窗 -->
             <el-dialog v-model="showScoreRuleDialog" title="规则" width="720px" destroy-on-close>
@@ -618,6 +616,239 @@
 
     <!-- 任务详情对话框 -->
     <TaskDetailDialog v-model="showTaskDetail" :task-id="currentTaskId" @refresh="handleRefresh" />
+
+    <!-- PM 专属项目考核 (boardType=4) - 不进入部门面板，单独展示 -->
+    <div v-if="boardType === 4" class="pm-assessment-board">
+      <el-card class="assessment-card" v-loading="evaluationLoading || scoreLoading">
+        <template #header>
+          <span class="card-title">项目考核</span>
+        </template>
+        <div class="assessment-view">
+          <el-tabs v-model="activeAssessmentTab" @tab-change="handleAssessmentTabChange">
+            <el-tab-pane label="项目成员评价数据报告" name="evaluation" />
+            <el-tab-pane label="项目成员得分总结" name="score" />
+          </el-tabs>
+
+          <!-- 评价数据报告内容 -->
+          <div v-show="activeAssessmentTab === 'evaluation'" class="evaluation-content">
+            <div class="content-filter content-filter-with-rule">
+              <el-space wrap>
+                <el-select
+                  v-model="selectedProjectId"
+                  placeholder="选择项目"
+                  style="width: 200px"
+                  @change="handleAssessmentProjectChange"
+                >
+                  <el-option
+                    v-for="project in assessmentProjectList"
+                    :key="project.id"
+                    :label="project.name"
+                    :value="project.id"
+                  />
+                </el-select>
+                <el-radio-group
+                  v-model="evaluationFilterIndex"
+                  @change="handleEvaluationFilterChange"
+                >
+                  <el-radio-button :label="0">全部</el-radio-button>
+                  <el-radio-button :label="1">当月</el-radio-button>
+                  <el-radio-button :label="2">当周</el-radio-button>
+                </el-radio-group>
+              </el-space>
+              <el-button
+                link
+                type="primary"
+                @click="showEvaluationRuleDialog = true"
+                class="rule-tip-btn"
+              >
+                <Icon icon="ep:question-filled" /> 评价规则说明
+              </el-button>
+            </div>
+
+            <el-table
+              v-loading="evaluationLoading"
+              :data="evaluationList"
+              :stripe="true"
+              style="width: 100%"
+              height="600"
+              border
+            >
+              <el-table-column type="index" width="68" label="序号" align="center" />
+              <el-table-column prop="userName" label="姓名" min-width="120" align="center" />
+              <el-table-column prop="deptName" label="部门" min-width="150" align="center" />
+              <el-table-column label="关键任务完成率" min-width="150" align="center">
+                <template #default="{ row }">
+                  <span>{{ row.taskAchievementRate }}%</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="交付及时性与计划管理" align="center">
+                <el-table-column label="及时完成" min-width="120" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.completeRate }}%</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="未完成延期率" min-width="130" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.delayRate }}%</span>
+                  </template>
+                </el-table-column>
+              </el-table-column>
+              <el-table-column label="工作负荷与投入有效性" align="center">
+                <el-table-column label="累计延期比率" min-width="130" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.totalDelayRate }}%</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="有效工作时长" min-width="150" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.workTimeString }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="累计延期时长" min-width="150" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.delayTimeString }}</span>
+                  </template>
+                </el-table-column>
+              </el-table-column>
+              <el-table-column label="质量与返工控制" align="center">
+                <el-table-column label="一次通过率" width="120" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.onceCompleteRate }}%</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="返工次数计算" width="130" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.reworkCount }}</span>
+                  </template>
+                </el-table-column>
+              </el-table-column>
+              <template #empty>
+                <span class="empty-text">暂无评价数据</span>
+              </template>
+            </el-table>
+
+            <el-dialog
+              v-model="showEvaluationRuleDialog"
+              title="规则"
+              width="720px"
+              destroy-on-close
+            >
+              <div class="assessment-rule-content">
+                <el-table :data="assessmentRuleTableData" border size="small" class="rule-table">
+                  <el-table-column prop="desc" label="描述" width="140" />
+                  <el-table-column prop="dimension" label="维度" width="100" />
+                  <el-table-column
+                    prop="formula"
+                    label="核心指标及概念"
+                    min-width="200"
+                    show-overflow-tooltip
+                  />
+                  <el-table-column prop="purpose" label="目的" width="120" />
+                  <el-table-column prop="weight" label="权重" width="80" align="center" />
+                </el-table>
+                <p class="rule-note"
+                  ><strong>说明</strong>：重要：一般重要：普通=4:3:2来划分，例如：KTA
+                  =（4+3+2）/（4+3+2）=100%</p
+                >
+              </div>
+            </el-dialog>
+          </div>
+
+          <!-- 得分总结内容 -->
+          <div v-show="activeAssessmentTab === 'score'" class="score-content">
+            <div class="content-filter content-filter-with-rule">
+              <el-space wrap>
+                <el-select
+                  v-model="selectedProjectId"
+                  placeholder="选择项目"
+                  style="width: 200px"
+                  @change="handleAssessmentProjectChange"
+                >
+                  <el-option
+                    v-for="project in assessmentProjectList"
+                    :key="project.id"
+                    :label="project.name"
+                    :value="project.id"
+                  />
+                </el-select>
+                <el-radio-group v-model="scoreFilterIndex" @change="handleScoreFilterChange">
+                  <el-radio-button :label="0">全部</el-radio-button>
+                  <el-radio-button :label="1">当月</el-radio-button>
+                  <el-radio-button :label="2">当周</el-radio-button>
+                </el-radio-group>
+              </el-space>
+              <el-button
+                link
+                type="primary"
+                @click="showScoreRuleDialog = true"
+                class="rule-tip-btn"
+              >
+                <Icon icon="ep:question-filled" /> 得分规则说明
+              </el-button>
+            </div>
+
+            <el-table
+              v-loading="scoreLoading"
+              :data="scoreList"
+              :stripe="true"
+              style="width: 100%"
+              border
+            >
+              <el-table-column type="index" width="68" label="序号" align="center" />
+              <el-table-column prop="userName" label="姓名" align="center" />
+              <el-table-column prop="deptName" label="部门" align="center" />
+              <el-table-column label="得分" align="center">
+                <template #default="{ row }">
+                  <span class="score-value">{{ row.score }}</span>
+                </template>
+              </el-table-column>
+              <template #empty>
+                <span class="empty-text">暂无得分数据</span>
+              </template>
+            </el-table>
+
+            <el-dialog v-model="showScoreRuleDialog" title="规则" width="720px" destroy-on-close>
+              <div class="assessment-rule-content">
+                <p
+                  ><strong>总分计算</strong>：维度1(分)×0.5 + 维度2及时(分)×0.15 +
+                  维度2延期(分)×0.15 + 维度3(分)×0.15 + 维度4(分)×0.1</p
+                >
+                <p
+                  ><strong>评分规则</strong>：5 分制，每个维度按关键指标映射到 1-5
+                  分，再按权重加权汇总。</p
+                >
+                <h5>维度 1：目标与关键任务达成（50%）</h5>
+                <el-table :data="dim1Rules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+                <h5>维度 2：交付及时性与计划管理（30%）</h5>
+                <p class="sub-title">及时完成率（15%）</p>
+                <el-table :data="dim2TimelyRules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+                <p class="sub-title">未完成延期率（15%）</p>
+                <el-table :data="dim2DelayRules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+                <h5>维度 3：有效时间投入（10%）- 累计延期比率</h5>
+                <el-table :data="dim3Rules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+                <h5>维度 4：质量与返工控制（10%）- 一次性通过率</h5>
+                <el-table :data="dim4Rules" border size="small" class="rule-table">
+                  <el-table-column prop="score" label="得分" width="80" align="center" />
+                  <el-table-column prop="condition" label="条件" />
+                </el-table>
+              </div>
+            </el-dialog>
+          </div>
+        </div>
+      </el-card>
+    </div>
 
     <!-- 部门看板 (boardType=3) - 从部门卡片钻取而来 -->
     <div v-if="boardType === 3" class="dept-board">
@@ -2161,6 +2392,18 @@ onMounted(() => {
   // 加载任务分类列表
   getTaskClassList()
 
+  const userRole = getUserIdentity()
+
+  // PM 身份：单独展示项目考核，不进入部门面板
+  if (userRole === 'pm') {
+    boardType.value = 4
+    activeAssessmentTab.value = 'evaluation'
+    evaluationFilterIndex.value = 0
+    scoreFilterIndex.value = 0
+    loadAssessmentProjectList()
+    return
+  }
+
   // 如果不是管理员（即是 leader），直接进入部门详情视图
   if (!isAdmin.value) {
     const user = userStore.getUser
@@ -2537,6 +2780,10 @@ $bg-color: #f5f7fa;
 
   .evaluation-content,
   .score-content {
+    .content-filter.content-filter-with-rule {
+      margin-top: 16px;
+    }
+
     .empty-text {
       text-align: center;
       color: $text-secondary;
@@ -2771,6 +3018,30 @@ $bg-color: #f5f7fa;
       padding: 60px 0;
       color: $text-secondary;
       font-size: 14px;
+    }
+  }
+}
+
+// PM 专属项目考核看板
+.pm-assessment-board {
+  padding: 0;
+
+  .assessment-card {
+    border: 1px solid var(--el-border-color-light);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+
+    :deep(.el-card__body) {
+      padding-top: 0;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+    }
+
+    .assessment-view {
+      padding: 0 0 16px 0;
     }
   }
 }

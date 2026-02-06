@@ -154,6 +154,7 @@
   },
   "resolutions": {
     "@vue/compiler-ssr": "3.4.21",
-    "@vue/server-renderer": "3.4.21"
+    "@vue/server-renderer": "3.4.21",
+    "strip-ansi": "^6.0.1"
   }
 }

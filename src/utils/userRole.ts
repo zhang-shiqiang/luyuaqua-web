@@ -3,26 +3,27 @@
  * 根据用户角色列表，从上到下按优先级获取最高身份
  * @returns 'admin' | 'leader' | 'user'
  */
-export function getUserIdentity(): 'admin' | 'leader' | 'user' {
+export function getUserIdentity(): 'admin' | 'leader' | 'user' | 'pm' {
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     const userInfo = JSON.parse(user.v || '{}')
     const roles: string[] = userInfo?.roles || []
     // 角色到身份的映射
-    const roleMap: Record<string, 'admin' | 'leader' | 'user'> = {
+    const roleMap: Record<string, 'admin' | 'leader' | 'user' | 'pm'> = {
       super_admin: 'admin',
       company_leader: 'admin',
       system_admin: 'admin',
       dept_leader: 'leader',
       leader: 'leader',
-      staff: 'user'
+      staff: 'user',
+      pm: 'pm'
     }
 
     // 身份优先级
-    const priority = { admin: 3, leader: 2, user: 1 }
+    const priority = { admin: 3, leader: 2, pm: 2, user: 1 }
 
     // 遍历角色列表，找到最高优先级的身份
-    let highestIdentity: 'admin' | 'leader' | 'user' = 'user'
+    let highestIdentity: 'admin' | 'leader' | 'user' | 'pm' = 'user'
     let highestPriority = 1
 
     for (const role of roles) {
